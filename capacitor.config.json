@@ -1,0 +1,14 @@
+{
+  "appId": "com.example.glossa",
+  "appName": "Glossa",
+  "webDir": "web",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f7f3ea"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

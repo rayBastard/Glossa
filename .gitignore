@@ -1,0 +1,13 @@
+node_modules/
+web/vendor/
+# Books are not part of the repository (copyright). Keep your own copies here locally.
+web/books/*
+!web/books/README.md
+.DS_Store
+*.log
+# Capacitor iOS build output (the ios/ project itself IS committed)
+ios/App/App/public/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+ios/DerivedData/
+ios/App/build/
