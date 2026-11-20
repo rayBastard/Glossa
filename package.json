@@ -11,7 +11,7 @@
     "ios:add": "npm run vendor && npx cap add ios && node scripts/ios-setup.mjs",
     "ios:sync": "npm run vendor && npx cap sync ios && node scripts/ios-setup.mjs",
     "ios:open": "npx cap open ios",
-    "ios:assets": "npx --yes @capacitor/assets generate --ios --iconBackgroundColor \"#b4532a\" --splashBackgroundColor \"#f7f3ea\""
+    "ios:assets": "npx --yes @capacitor/assets generate --ios --iconBackgroundColor \"#2f4ba8\" --splashBackgroundColor \"#edeee8\" --splashBackgroundColorDark \"#14161f\""
   },
   "dependencies": {
     "@capacitor/app": "^8.0.0",
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",
-    "@fontsource/literata": "^5.0.0",
-    "@fontsource/manrope": "^5.0.0",
+    "@fontsource/eb-garamond": "^5.0.0",
+    "@fontsource/ibm-plex-sans": "^5.0.0",
     "jszip": "3.10.1",
     "pdfjs-dist": "3.11.174"
   },

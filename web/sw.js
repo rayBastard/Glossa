@@ -1,5 +1,5 @@
 // Glossa — service worker: офлайн-работа приложения
-const VERSION = "glossa-v1";
+const VERSION = "glossa-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png",
   "vendor/fonts.css", "vendor/pdf.min.js", "vendor/pdf.worker.min.js", "vendor/jszip.min.js"];
 

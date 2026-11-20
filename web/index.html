@@ -1,243 +1,482 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Glossa</title>
-<meta name="theme-color" content="#b4532a">
+<meta name="theme-color" content="#2f4ba8">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="vendor/fonts.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
+/* ---------- tokens: pigments of a scriptorium ---------- */
 :root{
-  --paper:#f7f3ea; --paper2:#efe9dc; --card:#fffdf8; --ink:#2a2620; --ink2:#6b6358; --ink3:#9a9184;
-  --line:#e2dacb; --accent:#b4532a; --accent-soft:#f3e0d4; --expr:#c99a2e; --expr-soft:#f6ecd0;
-  --saved:#2f7a5b; --saved-soft:#dcefe5; --shadow:0 10px 30px rgba(60,40,20,.12);
-  --fs:19px;
+  --vellum:#edeee8;      /* page */
+  --leaf:#f7f7f3;        /* raised surfaces */
+  --ink:#1e2233;         /* iron-gall indigo */
+  --ink-2:#4d5266;
+  --ink-3:#8a8e9c;
+  --rule:#d5d7cf;
+  --lapis:#2f4ba8;       /* ultramarine: actions, initials, glosses */
+  --lapis-wash:#dfe4f4;
+  --gold:#b8892a;        /* gilding: expressions */
+  --gold-wash:#f1e6c8;
+  --verdigris:#2e7d6b;   /* saved words */
+  --verdigris-wash:#d6ebe4;
+  --vermilion:#b3261e;   /* errors only */
+  --on-pigment:#ffffff;
+  --shadow:0 1px 2px rgba(30,34,51,.06),0 12px 32px rgba(30,34,51,.12);
+  --serif:"EB Garamond",Garamond,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --fs:20px;
+  --safe-t:env(safe-area-inset-top);--safe-b:env(safe-area-inset-bottom);
 }
 @media (prefers-color-scheme:dark){:root{
-  --paper:#1c1a17; --paper2:#24211d; --card:#2a2622; --ink:#ece5d8; --ink2:#b3a998; --ink3:#857c6e;
-  --line:#3a352e; --accent:#e08a5f; --accent-soft:#4a3226; --expr:#e0b85a; --expr-soft:#463a1e;
-  --saved:#6cc59c; --saved-soft:#1f3a2e; --shadow:0 10px 30px rgba(0,0,0,.45);
+  --vellum:#14161f; --leaf:#1d2030; --ink:#e7e5dc; --ink-2:#b4b3ad; --ink-3:#7c7f8c; --rule:#2c3042;
+  --lapis:#93a7f2; --lapis-wash:#263055; --gold:#e1b85b; --gold-wash:#3d331b; --verdigris:#6cc4ae; --verdigris-wash:#1b3a33;
+  --vermilion:#f08a80; --on-pigment:#14161f; --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 36px rgba(0,0,0,.5);
 }}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--paper);color:var(--ink);font-family:Manrope,system-ui,sans-serif;font-size:15px}
+html,body{margin:0;background:var(--vellum);color:var(--ink);font:400 15px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+html{overflow-x:hidden;touch-action:pan-y pinch-zoom;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden;overscroll-behavior-x:none;position:relative;width:100%}
+#libView,#readView{overflow-x:clip;max-width:100vw}
+.orig,.gloss,.cover .t,.entry .t,.card .term{overflow-wrap:break-word}
 button,select,input{font:inherit;color:inherit}
-button{cursor:pointer}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--lapis);outline-offset:2px;border-radius:6px}
 .hidden{display:none!important}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- controls ---------- */
+.icon-btn{display:inline-grid;place-items:center;width:40px;height:40px;border:none;background:transparent;border-radius:12px;color:var(--ink-2);position:relative}
+.icon-btn:hover{background:var(--leaf);color:var(--ink)}
+.count{position:absolute;top:3px;right:1px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--verdigris);color:var(--on-pigment);font-size:11px;font-weight:600;line-height:17px;text-align:center}
+.count:empty,.count[data-n="0"]{display:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--rule);background:var(--leaf);border-radius:10px;padding:9px 16px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--lapis);border-color:var(--lapis);color:var(--on-pigment)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.quiet{border-color:transparent;background:transparent}
+.btn:disabled{opacity:.45;cursor:default}
+.select{appearance:none;border:1px solid var(--rule);background:var(--leaf) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a8e9c' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;border-radius:10px;padding:9px 32px 9px 12px;max-width:100%}
+.field input[type=password],.field input[type=text],.search{width:100%;border:1px solid var(--rule);border-radius:10px;padding:9px 12px;background:var(--vellum)}
+.seg{display:flex;background:var(--vellum);border:1px solid var(--rule);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:none;background:transparent;border-radius:9px;padding:7px 8px;font-size:13px;color:var(--ink-2)}
+.seg button.on{background:var(--leaf);color:var(--ink);box-shadow:0 1px 2px rgba(30,34,51,.12)}
 
 /* ---------- top bar ---------- */
-.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  padding:max(10px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) 10px max(18px,env(safe-area-inset-left));background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.brand{font-family:Literata,serif;font-weight:600;font-size:18px;letter-spacing:.2px;margin-right:6px;white-space:nowrap}
-.brand small{display:block;font-family:Manrope;font-weight:500;font-size:12px;color:var(--ink2);max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:6px;
+  padding:calc(10px + var(--safe-t)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));
+  background:color-mix(in srgb,var(--vellum) 88%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
+.bar.scrolled{border-bottom-color:var(--rule)}
 .spacer{flex:1}
-.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:7px 12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn:hover{border-color:var(--ink3)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.ghost{background:transparent;border-color:transparent}
-.btn:disabled{opacity:.5;cursor:default}
-.sel{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:7px 8px;max-width:220px}
-.langs{display:flex;align-items:center;gap:6px}
-.ico{display:none}
-.badge{background:var(--accent);color:#fff;border-radius:99px;padding:0 7px;font-size:12px;font-weight:700}
+.wordmark{font:500 26px/1 var(--serif);letter-spacing:.2px;display:flex;align-items:baseline}
+.wordmark b{font-weight:600;color:var(--lapis);font-size:32px;margin-right:1px}
 
-/* ---------- library ---------- */
-.lib{max-width:900px;margin:40px auto;padding:0 20px}
-.lib h1{font-family:Literata,serif;font-weight:600;font-size:34px;margin:0 0 6px}
-.lib p.lead{color:var(--ink2);margin:0 0 28px;line-height:1.6}
-.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
-.book{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;position:relative;min-height:170px;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
-.book:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-.book .t{font-family:Literata,serif;font-size:20px;font-weight:600;line-height:1.25}
-.book .a{color:var(--ink2);margin-top:4px}
-.book .m{margin-top:auto;color:var(--ink3);font-size:13px}
-.book .x{position:absolute;top:8px;right:8px;opacity:.5}
-.book.add{border-style:dashed;align-items:center;justify-content:center;text-align:center;color:var(--ink2)}
-.book.add b{font-size:30px;font-weight:400;color:var(--accent)}
-.drop{outline:2px dashed var(--accent);outline-offset:6px}
-.note{margin-top:26px;color:var(--ink2);font-size:13px;line-height:1.6}
+/* ---------- shelf ---------- */
+.shelf-wrap{max-width:1080px;margin:0 auto;padding:28px 24px calc(60px + var(--safe-b))}
+.shelf-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:8px 0 28px}
+.shelf-head h1{font:500 40px/1.1 var(--serif);margin:0;max-width:22ch;text-wrap:balance}
+.shelf-head p{color:var(--ink-2);margin:10px 0 0;max-width:46ch}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:28px 22px}
+.cover{position:relative;aspect-ratio:2/3;border-radius:4px 10px 10px 4px;padding:18px 16px 16px 22px;display:flex;flex-direction:column;cursor:pointer;
+  background:var(--c-bg);color:var(--c-ink);box-shadow:inset 6px 0 0 rgba(0,0,0,.12),var(--shadow);transition:transform .18s ease}
+.cover:hover{transform:translateY(-3px)}
+.cover .init{font:600 76px/0.9 var(--serif);color:var(--c-accent);margin-bottom:8px}
+.cover .t{font:500 21px/1.15 var(--serif)}
+.cover .a{font-size:13px;opacity:.8;margin-top:6px}
+.cover .m{margin-top:auto;font-size:12px;opacity:.75;display:flex;justify-content:space-between;gap:6px}
+.cover .prog{position:absolute;left:22px;right:16px;bottom:8px;height:2px;border-radius:2px;background:rgba(255,255,255,.18)}
+.cover .prog i{display:block;height:100%;border-radius:2px;background:var(--c-accent)}
+.cover .x{position:absolute;top:6px;right:6px;width:30px;height:30px;color:inherit;opacity:0;transition:opacity .15s}
+.cover:hover .x,.cover:focus-within .x{opacity:.7}
+@media (hover:none){.cover .x{opacity:.55}}
+.cover.add{background:transparent;color:var(--ink-2);border:1.5px dashed var(--rule);box-shadow:none;align-items:center;justify-content:center;text-align:center;gap:8px}
+.cover.add .plus{font:400 54px/1 var(--serif);color:var(--lapis)}
+.cover.add small{color:var(--ink-3);font-size:12px;line-height:1.4}
+.drop .cover.add{border-color:var(--lapis);background:var(--lapis-wash)}
+.shelf-note{color:var(--ink-3);font-size:13px;margin-top:36px}
+.shelf-note.err{color:var(--vermilion)}
 
 /* ---------- reader ---------- */
-.reader{max-width:1280px;margin:0 auto;padding:10px 18px 120px}
-.colhead{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:14px 4px 6px;color:var(--ink3);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;border-bottom:1px solid var(--line);margin-bottom:10px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:6px 4px;border-radius:10px}
-.row.focus{background:var(--paper2)}
-.orig,.tr{font-family:Literata,serif;font-size:var(--fs);line-height:1.7;margin:0;hyphens:auto}
-.orig{text-indent:1.4em}
-.tr{color:var(--ink2);font-size:calc(var(--fs) - 1px);text-indent:1.4em}
-.row.h .orig,.row.h .tr{text-indent:0;font-weight:600;text-align:center;letter-spacing:1px;margin-top:22px;color:var(--ink)}
-.row.q .orig,.row.q .tr{font-style:italic;text-align:right}
-.w{cursor:pointer;border-radius:3px;transition:background .1s}
-.w:hover{background:var(--accent-soft)}
-.w.ex{background:linear-gradient(transparent 62%,var(--expr-soft) 62%);border-bottom:2px dotted var(--expr)}
-.w.sv{border-bottom:2px solid var(--saved);background:var(--saved-soft)}
-.w.on{background:var(--accent);color:#fff}
-.mode-hide .tr{filter:blur(6px);cursor:pointer;user-select:none;transition:filter .2s}
-.mode-hide .tr.shown{filter:none;user-select:auto}
-.mode-orig .tr,.mode-orig .colhead div:last-child{display:none}
-.mode-orig .row,.mode-orig .colhead{grid-template-columns:1fr;max-width:760px;margin-left:auto;margin-right:auto}
-.skel{display:block;height:.9em;margin:.45em 0;border-radius:6px;background:linear-gradient(90deg,var(--paper2),var(--line),var(--paper2));background-size:200% 100%;animation:sh 1.4s infinite}
+.r-title{min-width:0;display:flex;flex-direction:column;margin-left:2px}
+.r-title b{font:500 19px/1.2 var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-title button{border:none;background:none;padding:0;color:var(--ink-3);font-size:12.5px;text-align:left;display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.r-title button:hover{color:var(--lapis)}
+.pair{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);background:var(--leaf);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:500}
+.pair svg{width:14px;height:14px}
+.reader{max-width:1240px;margin:0 auto;padding:8px 28px calc(100px + var(--safe-b))}
+.spread{position:relative}
+.spread::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--rule)}
+.row{display:grid;grid-template-columns:1fr 1fr;column-gap:64px;padding:5px 0;border-radius:8px}
+.row.focus{background:linear-gradient(90deg,transparent,var(--leaf) 8%,var(--leaf) 92%,transparent)}
+.orig{font:400 var(--fs)/1.62 var(--serif);margin:0;hyphens:auto;text-indent:1.3em;max-width:36em}
+.gloss{font:400 calc(var(--fs) * .8)/1.6 var(--sans);color:var(--ink-2);margin:0;text-indent:1.3em;max-width:40em;padding-top:.15em}
+.row.h{padding-top:40px}
+.row.h .orig{font-size:calc(var(--fs) * 1.35);font-weight:500;text-indent:0;line-height:1.25}
+.row.h .gloss{font-size:calc(var(--fs) * .95);font-weight:500;text-indent:0;color:var(--ink-2)}
+.row.q .orig,.row.q .gloss{font-style:italic;text-indent:0;padding-left:1.4em}
+.row.cap .orig{text-indent:0}
+.row.cap .orig::first-letter{float:left;font-size:4.1em;line-height:.82;font-weight:500;color:var(--lapis);padding:.06em .08em 0 0;margin-top:.04em}
+.w{cursor:pointer;border-radius:3px;transition:background .12s}
+.w:hover{background:var(--lapis-wash)}
+.w.ex{background-image:linear-gradient(var(--gold),var(--gold));background-size:100% 1.5px;background-repeat:no-repeat;background-position:0 92%}
+.w.ex:hover{background-color:var(--gold-wash)}
+.w.sv{background-color:var(--verdigris-wash);box-shadow:inset 0 -1.5px 0 var(--verdigris)}
+.w.on,.w.on:hover,.w.ex.on:hover{background:var(--lapis);background-image:none;color:var(--on-pigment);box-shadow:none}
+.mode-hide .gloss{filter:blur(5px);cursor:pointer;user-select:none;transition:filter .25s}
+.mode-hide .gloss.shown{filter:none;user-select:auto}
+.mode-orig .gloss{display:none}
+.mode-orig .spread::before{display:none}
+.mode-orig .row{grid-template-columns:minmax(0,36em);justify-content:center}
+.skel{display:block;height:.75em;margin:.55em 0;border-radius:6px;background:linear-gradient(90deg,var(--rule),var(--leaf),var(--rule));background-size:200% 100%;animation:sh 1.5s infinite;opacity:.7}
 @keyframes sh{to{background-position:-200% 0}}
-.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin:30px 0 10px}
-.pager .pg{color:var(--ink2);min-width:140px;text-align:center}
-.status{text-align:center;color:var(--ink2);margin:16px 0;font-size:14px}
-.status .btn{margin-left:8px}
-.err{color:var(--accent)}
-@media (max-width:760px){
-  .row,.colhead{grid-template-columns:1fr;gap:4px}
-  .colhead div:last-child{display:none}
-  .tr{font-size:calc(var(--fs) - 3px);border-left:3px solid var(--line);padding-left:10px;text-indent:0;margin-bottom:10px}
-  .bar{gap:6px}
-  .brand{font-size:16px}.brand small{display:none}
-  #readView .bar .spacer{display:none}
-  #toc{flex:1;min-width:0}
-  .langs{order:5;flex:1 1 100%}
-  .langs .sel{flex:1;min-width:0;padding:5px 6px}
-  .legend span:last-child{display:none}
-  .lbl{display:none}.ico{display:inline}
-  #rTitle{max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;text-align:center;color:var(--ink-2);margin:6px 0 10px;font-size:14px}
+.status:empty{display:none}
+.status .err{color:var(--vermilion)}
+.foot{display:flex;align-items:center;gap:14px;margin:44px auto 0;max-width:560px}
+.foot .track{flex:1;height:3px;border-radius:3px;background:var(--rule);position:relative}
+.foot .track i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--lapis)}
+.foot .pg{font-size:13px;color:var(--ink-3);min-width:72px;text-align:center;font-variant-numeric:tabular-nums}
+.foot .icon-btn{border:1px solid var(--rule);border-radius:50%}
+.foot .icon-btn:disabled{opacity:.35}
+.legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;color:var(--ink-3);font-size:12.5px;margin-top:18px}
+.legend i{display:inline-block;width:16px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle}
+@media (max-width:820px){
+  .reader{padding:4px 18px calc(90px + var(--safe-b))}
+  .spread::before{display:none}
+  .row{grid-template-columns:1fr;row-gap:4px;padding:4px 0}
+  .gloss{text-indent:0;border-left:2px solid var(--lapis-wash);padding:0 0 6px 12px;font-size:calc(var(--fs) * .78)}
+  .row.h .gloss{border:none;padding-left:0}
+  .pair .long{display:none}
+  .legend .keys{display:none}
+  .shelf-head h1{font-size:32px}
+  .shelf{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:22px 16px}
+  .cover .init{font-size:60px}
+  .cover .t{font-size:18px}
 }
 
-/* ---------- popup ---------- */
-.pop{position:absolute;z-index:50;width:340px;max-width:calc(100vw - 20px);background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px}
-.pop .term{font-family:Literata,serif;font-size:21px;font-weight:600;display:flex;align-items:center;gap:8px}
-.pop .lemma{color:var(--ink3);font-size:13px;margin-top:2px}
-.pop .trn{font-size:16px;margin-top:10px;font-weight:600}
-.pop .alt{color:var(--ink2);font-size:13px;margin-top:4px}
-.pop .nt{color:var(--ink2);font-size:13px;margin-top:8px;line-height:1.5;border-top:1px solid var(--line);padding-top:8px}
-.pop .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.pop .x{position:absolute;top:8px;right:8px}
-.icon{border:none;background:transparent;padding:4px;border-radius:8px;color:var(--ink2)}
-.icon:hover{background:var(--paper2)}
-@media (max-width:760px){.pop{position:fixed;left:8px!important;right:8px;bottom:max(8px,env(safe-area-inset-bottom));top:auto!important;width:auto}}
+/* ---------- word card ---------- */
+.card{position:absolute;z-index:50;width:340px;max-width:calc(100vw - 20px);background:var(--leaf);border:1px solid var(--rule);border-radius:16px;box-shadow:var(--shadow);padding:16px 18px 14px}
+.card .term{font:500 26px/1.15 var(--serif);display:flex;align-items:center;gap:6px;padding-right:30px}
+.card .lemma{color:var(--ink-3);font-size:13px;margin-top:3px}
+.card .tr{font-size:17px;font-weight:600;margin-top:12px;color:var(--lapis)}
+.card .alt{color:var(--ink-2);font-size:13.5px;margin-top:3px}
+.card .note{color:var(--ink-2);font-size:13.5px;margin-top:10px;line-height:1.5;padding-top:10px;border-top:1px solid var(--rule)}
+.card .note.err{color:var(--vermilion)}
+.card .acts{display:flex;gap:8px;margin-top:14px}
+.card .x{position:absolute;top:8px;right:8px;width:34px;height:34px}
+.card .icon-btn.small{width:32px;height:32px}
+@media (max-width:820px){.card{position:fixed;left:10px!important;right:10px;top:auto!important;bottom:calc(10px + var(--safe-b));width:auto;max-width:none;animation:up .2s ease}}
+@keyframes up{from{transform:translateY(16px);opacity:0}}
 
-/* ---------- drawer ---------- */
-.shade{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:60}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:var(--card);z-index:61;display:flex;flex-direction:column;box-shadow:var(--shadow)}
-.drawer header{padding:max(16px,env(safe-area-inset-top)) 18px 10px;border-bottom:1px solid var(--line)}
-.drawer h2{margin:0 0 10px;font-family:Literata,serif;font-weight:600}
+/* ---------- sheets ---------- */
+.shade{position:fixed;inset:0;background:rgba(20,22,31,.32);z-index:60;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:var(--leaf);z-index:61;display:flex;flex-direction:column;box-shadow:var(--shadow);animation:slide .22s ease}
+@keyframes slide{from{transform:translateX(24px);opacity:0}}
+.drawer header{padding:calc(16px + var(--safe-t)) 20px 14px;border-bottom:1px solid var(--rule)}
+.drawer h2{margin:0;font:500 26px/1.2 var(--serif);flex:1}
+.drawer .head{display:flex;align-items:center;gap:6px;margin-bottom:12px}
 .tabs{display:flex;gap:6px;flex-wrap:wrap}
-.tab{border:1px solid var(--line);background:transparent;border-radius:99px;padding:4px 12px;font-size:13px}
-.tab.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.drawer .tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.drawer .tools input{flex:1 1 160px;min-width:0;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--paper)}
-.vlist{overflow:auto;flex:1;padding:6px 18px max(30px,env(safe-area-inset-bottom))}
-.v{padding:12px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:4px 10px}
-.v .t{font-family:Literata,serif;font-weight:600;font-size:17px}
-.v .r{font-weight:600}
-.v .c{grid-column:1/-1;color:var(--ink2);font-size:13px;font-family:Literata,serif;line-height:1.5}
-.v .c b{color:var(--ink);background:var(--saved-soft)}
-.v .meta{grid-column:1/-1;color:var(--ink3);font-size:12px;display:flex;gap:10px;align-items:center}
-.v .acts{display:flex;gap:2px;align-items:start}
-.pill{font-size:11px;border-radius:99px;padding:1px 8px;border:1px solid var(--line)}
-.pill.learn{background:var(--accent-soft);border-color:transparent}
-.pill.known{background:var(--saved-soft);border-color:transparent}
-.empty{color:var(--ink2);text-align:center;padding:40px 10px;line-height:1.6}
-
-/* ---------- flashcards ---------- */
-.fc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;gap:14px}
-.fc .card{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:30px 20px;min-height:220px;display:flex;flex-direction:column;justify-content:center;gap:12px}
-.fc .ft{font-family:Literata,serif;font-size:30px;font-weight:600}
-.fc .fctx{font-family:Literata,serif;color:var(--ink2);line-height:1.5}
-.fc .fa{font-size:20px;font-weight:600;color:var(--saved)}
-
-/* ---------- settings ---------- */
-.modal{position:fixed;z-index:70;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,94vw);background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:20px}
-.modal h3{margin:0 0 14px;font-family:Literata,serif;font-weight:600}
-.field{margin:12px 0}
-.field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px}
-.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.seg button{flex:1;border:none;background:transparent;padding:8px 6px;font-size:13px}
-.seg button.on{background:var(--ink);color:var(--paper)}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:10px;z-index:90;font-size:14px;box-shadow:var(--shadow)}
-.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--ink3);font-size:12px;justify-content:center;margin-top:6px}
-.legend span i{display:inline-block;width:18px;height:10px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.tab{border:1px solid var(--rule);background:transparent;border-radius:99px;padding:5px 12px;font-size:13px;color:var(--ink-2)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:var(--vellum)}
+.tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tools .search{flex:1 1 150px;min-width:0}
+.list{overflow:auto;flex:1;padding:4px 20px calc(30px + var(--safe-b))}
+.entry{padding:14px 0;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+.entry .t{font:500 20px/1.25 var(--serif)}
+.entry .t small{font:400 13px var(--sans);color:var(--ink-3);margin-left:6px}
+.entry .r{color:var(--lapis);font-weight:500}
+.entry .c{grid-column:1/-1;color:var(--ink-2);font:400 15px/1.5 var(--serif);margin-top:4px}
+.entry .c b{font-weight:500;color:var(--ink);background:var(--verdigris-wash)}
+.entry .meta{grid-column:1/-1;color:var(--ink-3);font-size:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.entry .acts{display:flex;align-items:start}
+.entry .icon-btn{width:34px;height:34px}
+.state{font-size:11.5px;border-radius:99px;padding:1px 9px;background:var(--lapis-wash);color:var(--lapis)}
+.state.known{background:var(--verdigris-wash);color:var(--verdigris)}
+.empty{color:var(--ink-2);text-align:center;padding:56px 16px;line-height:1.6;max-width:30ch;margin:0 auto}
+.fc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;text-align:center}
+.fc .face{width:100%;background:var(--vellum);border:1px solid var(--rule);border-radius:18px;padding:34px 22px;min-height:240px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.fc .ft{font:500 38px/1.1 var(--serif)}
+.fc .ctx{font:400 16px/1.5 var(--serif);color:var(--ink-2)}
+.fc .ctx b{font-weight:500;color:var(--ink)}
+.fc .fa{font-size:20px;font-weight:600;color:var(--lapis)}
+.modal{position:fixed;z-index:70;left:50%;top:50%;transform:translate(-50%,-50%);width:min(460px,94vw);max-height:90vh;overflow:auto;background:var(--leaf);border-radius:20px;box-shadow:var(--shadow);padding:22px 22px 18px;animation:fade .2s}
+.modal h3{margin:0 0 6px;font:500 26px/1.2 var(--serif)}
+.modal p{color:var(--ink-2);line-height:1.55;margin:10px 0}
+.modal p b{color:var(--ink);font-weight:600}
+.group{border-top:1px solid var(--rule);padding:14px 0 4px;margin-top:10px}
+.group:first-of-type{border-top:none;margin-top:4px}
+.field{margin:10px 0}
+.field>label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;font-weight:500}
+.hint{font-size:12.5px;color:var(--ink-3);margin-top:6px;line-height:1.45}
+.hint.ok{color:var(--verdigris)}.hint.err{color:var(--vermilion)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--lapis);width:16px;height:16px;flex:none}
+.row-end{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.stack{display:flex;flex-direction:column;gap:8px}
+.stack .btn{justify-content:flex-start}
+.toast{position:fixed;bottom:calc(22px + var(--safe-b));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--vellum);padding:10px 18px;border-radius:12px;z-index:90;font-size:14px;box-shadow:var(--shadow);max-width:90vw;text-align:center}
+input[type=range]{width:100%;accent-color:var(--lapis)}
 </style>
 </head>
 <body>
 
-<!-- ===== LIBRARY ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></symbol>
+  <symbol id="i-words" viewBox="0 0 24 24"><path d="M6 3h11a1 1 0 011 1v17l-6.5-4L5 21V4a1 1 0 011-1z"/><path d="M9 8h6M9 11.5h4"/></symbol>
+  <symbol id="i-speak" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+</svg>
+
+<!-- ===== SHELF ===== -->
 <div id="libView">
-  <div class="bar"><div class="brand">📖 Glossa</div><div class="spacer"></div>
-    <button class="btn" id="libSet" title="Настройки">⚙︎</button>
-    <button class="btn" id="libDict">Словарь <span class="badge" id="libCount">0</span></button></div>
-  <div class="lib">
-    <h1>Читайте в оригинале — перевод рядом</h1>
-    <p class="lead">Загрузите книгу в PDF, FB2, EPUB или TXT. Слева — текст оригинала, справа — перевод абзац за абзацем.
-      Нажмите на слово или выделите фразу, чтобы увидеть перевод и добавить в личный словарь. Устойчивые выражения подчёркиваются автоматически.</p>
+  <div class="bar" id="libBar">
+    <div class="wordmark" aria-label="Glossa"><b>G</b>lossa</div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="libDict" data-t-title="vocab"><svg class="i"><use href="#i-words"/></svg><span class="count" id="libCount"></span></button>
+    <button class="icon-btn" id="libSet" data-t-title="settings"><svg class="i"><use href="#i-gear"/></svg></button>
+  </div>
+  <main class="shelf-wrap">
+    <div class="shelf-head"><div><h1 data-t="lib_title"></h1><p data-t="lib_lead"></p></div></div>
     <div class="shelf" id="shelf"></div>
     <input type="file" id="fileIn" accept=".pdf,.fb2,.epub,.txt,.xml" class="hidden">
-    <div class="note" id="libNote">Книги, переводы и словарь хранятся на этом устройстве. Делайте резервную копию словаря: Словарь → Экспорт.</div>
-  </div>
+    <div class="shelf-note" id="libNote" data-t="lib_note"></div>
+  </main>
 </div>
 
 <!-- ===== READER ===== -->
 <div id="readView" class="hidden">
-  <div class="bar">
-    <button class="btn ghost" id="backLib" title="Библиотека">←</button>
-    <div class="brand" id="rTitle">—<small id="rAuthor"></small></div>
-    <select class="sel" id="toc" title="Оглавление"></select>
+  <div class="bar" id="readBar">
+    <button class="icon-btn" id="backLib" data-t-title="back"><svg class="i"><use href="#i-back"/></svg></button>
+    <div class="r-title"><b id="rTitle"></b><button id="tocBtn"><span id="tocLabel"></span><svg class="i" style="width:13px;height:13px"><use href="#i-down"/></svg></button></div>
     <div class="spacer"></div>
-    <div class="langs">
-      <select class="sel" id="srcLang" title="Язык оригинала"></select>
-      <span>→</span>
-      <select class="sel" id="tgtLang" title="Язык перевода"></select>
-    </div>
-    <button class="btn" id="setBtn" title="Настройки">Aa</button>
-    <button class="btn" id="dictBtn"><span class="lbl">Словарь</span><span class="ico">📚</span> <span class="badge" id="dictCount">0</span></button>
+    <button class="pair" id="pairBtn"><span id="pairSrc"></span><svg class="i"><use href="#i-arrow"/></svg><span id="pairTgt"></span></button>
+    <button class="icon-btn" id="dictBtn" data-t-title="vocab"><svg class="i"><use href="#i-words"/></svg><span class="count" id="dictCount"></span></button>
+    <button class="icon-btn" id="setBtn" data-t-title="settings"><svg class="i"><use href="#i-gear"/></svg></button>
   </div>
-  <div class="reader" id="reader">
-    <div class="colhead"><div id="hSrc">Оригинал</div><div id="hTgt">Перевод</div></div>
-    <div id="rows"></div>
+  <main class="reader" id="reader">
     <div class="status" id="status"></div>
-    <div class="legend"><span><i style="background:var(--expr-soft);border-bottom:2px dotted var(--expr)"></i>выражение</span>
-      <span><i style="background:var(--saved-soft);border-bottom:2px solid var(--saved)"></i>в словаре</span>
-      <span>клик — слово · выделение — фраза · ← → — страницы</span></div>
-    <div class="pager">
-      <button class="btn" id="prevP">← Назад</button>
+    <div class="spread" id="rows"></div>
+    <div class="foot">
+      <button class="icon-btn" id="prevP" data-t-title="prev"><svg class="i"><use href="#i-back"/></svg></button>
+      <div class="track"><i id="track"></i></div>
       <div class="pg" id="pgInfo"></div>
-      <button class="btn" id="nextP">Дальше →</button>
+      <button class="icon-btn" id="nextP" data-t-title="next"><svg class="i"><use href="#i-next"/></svg></button>
     </div>
-  </div>
+    <div class="legend">
+      <span><i style="background:var(--gold-wash);box-shadow:inset 0 -2px 0 var(--gold)"></i><span data-t="legend_expr"></span></span>
+      <span><i style="background:var(--verdigris-wash);box-shadow:inset 0 -2px 0 var(--verdigris)"></i><span data-t="legend_saved"></span></span>
+      <span class="keys" data-t="legend_keys"></span>
+    </div>
+  </main>
 </div>
 
-<div id="pop" class="pop hidden"></div>
+<div id="card" class="card hidden" role="dialog"></div>
 <div id="shade" class="shade hidden"></div>
-<div id="drawer" class="drawer hidden"></div>
-<div id="modal" class="modal hidden"></div>
-<div id="toast" class="toast hidden"></div>
+<div id="drawer" class="drawer hidden" role="dialog"></div>
+<div id="modal" class="modal hidden" role="dialog"></div>
 <div id="shade2" class="shade hidden" style="z-index:80"></div>
-<div id="consent" class="modal hidden" style="z-index:81;line-height:1.55"></div>
+<div id="consent" class="modal hidden" style="z-index:81" role="dialog"></div>
+<div id="toast" class="toast hidden" role="status"></div>
 
 <script>
 "use strict";
-/* ================= constants ================= */
-const LANGS=[["auto","Авто"],["ro","Румынский"],["en","Английский"],["es","Испанский"],["fr","Французский"],["de","Немецкий"],["it","Итальянский"],["pt","Португальский"],["ru","Русский"],["uk","Украинский"],["pl","Польский"],["cs","Чешский"],["nl","Нидерландский"],["sv","Шведский"],["no","Норвежский"],["da","Датский"],["fi","Финский"],["hu","Венгерский"],["el","Греческий"],["tr","Турецкий"],["bg","Болгарский"],["sr","Сербский"],["hr","Хорватский"],["he","Иврит"],["ar","Арабский"],["ja","Японский"],["zh","Китайский"],["ko","Корейский"],["la","Латынь"]];
-const LNAME=Object.fromEntries(LANGS);
-const LNAME_EN={ro:"Romanian",en:"English",es:"Spanish",fr:"French",de:"German",it:"Italian",pt:"Portuguese",ru:"Russian",uk:"Ukrainian",pl:"Polish",cs:"Czech",nl:"Dutch",sv:"Swedish",no:"Norwegian",da:"Danish",fi:"Finnish",hu:"Hungarian",el:"Greek",tr:"Turkish",bg:"Bulgarian",sr:"Serbian",hr:"Croatian",he:"Hebrew",ar:"Arabic",ja:"Japanese",zh:"Chinese",ko:"Korean",la:"Latin"};
-const PAGE_CHARS=2400;
-let BUILTIN=[]; // встроенные книги перечислены в books/index.json (необязательный файл)
-
-/* ================= state ================= */
-const S={
-  book:null, pages:[], page:0, toc:[],
-  vocab:new Map(), savedForms:new Set(), savedPhrases:[],
-  trCache:new Map(), pending:new Map(), lookCache:new Map(),
-  settings:Object.assign({mode:"par",fs:19,tgt:"ru",auto:true,tier:"default"},lsGet("pb_settings")||{}),
-  capsReady:true,
-};
+/* ================= i18n ================= */
+const I18N={
+en:{
+  lib_title:"Read in the original. The translation waits in the margin.",
+  lib_lead:"Open a book and the translation appears beside every paragraph. Tap a word to see what it means here, select a phrase, save what's new.",
+  lib_note:"Books, translations and your vocabulary stay on this device.",
+  add_book:"Add a book", add_hint:"PDF, EPUB, FB2 or TXT, or drop a file here",
+  pages_n:"{n} pages", page_n:"Page {n}", remove_book:"Remove from shelf",
+  loading_book:"Opening the book…", reading_file:"Reading the file…", pdf_progress:"Reading PDF: page {n} of {t}…",
+  book_added:"Book added.", open_failed:"Couldn't open “{name}”: {err}", no_text:"no text found. Scanned PDFs without a text layer can't be read.",
+  back:"Back to shelf", vocab:"Vocabulary", settings:"Settings", prev:"Previous page", next:"Next page",
+  contents:"Contents", lang_pair:"Languages", src_lang:"Book language", tgt_lang:"Translate into", lang_auto:"Detect automatically",
+  translating:"Translating this page…", translate_page:"Translate page", retry:"Try again",
+  need_key:"Add your Anthropic API key to turn on translation.", open_settings:"Open settings",
+  legend_expr:"Expression", legend_saved:"In your vocabulary", legend_keys:"Tap a word, select a phrase, use ← → to turn pages",
+  save_word:"Save word", saved_remove:"Saved — remove", speak:"Pronounce", expression:"expression", saved_toast:"Saved to vocabulary",
+  err_no_key:"Add your Anthropic API key in Settings to turn on translation.",
+  err_bad_key:"The API key was rejected. Check it in Settings.",
+  err_rate:"Too many requests right now. Wait a minute and try again.",
+  err_overloaded:"The translation service is busy. Try again in a moment.",
+  err_offline:"No internet connection. Pages you've already translated are still available.",
+  err_bad_model:"This model isn't available for your key: ",
+  err_generic:"Translation failed",
+  err_no_consent:"Translation is off because sending text to Claude isn't allowed. You can allow it in Settings.",
+  consent_title:"Translation by AI",
+  consent_1:"To translate, Glossa sends text to <b>Claude</b>, an AI service by <b>Anthropic, PBC</b> (USA), using your own API key.",
+  consent_2:"<b>Sent:</b> the text of the page you're reading, the words or phrases you select with the sentence around them, and the book's title and author.",
+  consent_3:"<b>Never sent:</b> your vocabulary, whole book files or anything about your device. Glossa has no server of its own; requests go straight to Anthropic.",
+  consent_4:"You can withdraw this at any time in Settings.",
+  allow:"Allow", not_now:"Not now",
+  s_reading:"Reading", s_translation:"Translation", s_interface:"Interface",
+  ui_lang:"Interface language", api_key:"Anthropic API key", key_saved:"Saved on this device.",
+  key_hint:"Stored only on this device. Create one at console.anthropic.com → API keys.",
+  check:"Check", checking:"Checking…", key_ok:"The key works.",
+  consent_toggle:"Allow sending text to Claude (Anthropic) for translation",
+  quality:"Translation quality", q_fast:"Fast", q_std:"Standard", q_lit:"Literary",
+  q_hint:"Literary uses the strongest model: it keeps the author's style best but is slower and costs more.",
+  view:"Translation", v_side:"Side by side", v_hide:"Hidden until tapped", v_orig:"Original only",
+  text_size:"Text size", auto:"Translate pages automatically and prepare the next one", done:"Done",
+  t_all:"All", t_book:"This book", t_learning:"Learning", t_known:"Known", search:"Search", cards:"Flashcards", export:"Export",
+  empty_vocab:"Nothing saved yet. Tap a word in the text, or select a phrase, and save it.",
+  mark_known:"Mark as known", mark_learning:"Move back to learning", del:"Delete", st_learning:"learning", st_known:"known",
+  card_of:"{n} of {t}", show:"Show translation", forgot:"Forgot", remember:"Remembered", cards_done:"All done", reviewed:"Words reviewed: {n}", to_list:"Back to the list",
+  export_title:"Export vocabulary", exp_csv:"CSV for Excel or Google Sheets", exp_anki:"Text file for Anki: word, translation, context", exp_json:"Full backup (JSON)", exp_restore:"Restore from a backup…",
+  restored:"Words restored: {n}", not_backup:"This file isn't a Glossa backup.", close:"Close", share_failed:"Couldn't share the file.", file_failed:"Couldn't open the file.",
+  first_run:"Add your API key in Settings to turn on translation.",
+  same_lang:"The book is already in {lang}. Choose the language to translate into.", choose_lang:"Choose language"
+},
+es:{
+  lib_title:"Lee en el original. La traducción espera en el margen.",
+  lib_lead:"Abre un libro y la traducción aparece junto a cada párrafo. Toca una palabra para ver qué significa aquí, selecciona una frase y guarda lo nuevo.",
+  lib_note:"Los libros, las traducciones y tu vocabulario se quedan en este dispositivo.",
+  add_book:"Añadir un libro", add_hint:"PDF, EPUB, FB2 o TXT, o suelta un archivo aquí",
+  pages_n:"{n} páginas", page_n:"Página {n}", remove_book:"Quitar de la estantería",
+  loading_book:"Abriendo el libro…", reading_file:"Leyendo el archivo…", pdf_progress:"Leyendo el PDF: página {n} de {t}…",
+  book_added:"Libro añadido.", open_failed:"No se pudo abrir «{name}»: {err}", no_text:"no se encontró texto. Los PDF escaneados sin capa de texto no se pueden leer.",
+  back:"Volver a la estantería", vocab:"Vocabulario", settings:"Ajustes", prev:"Página anterior", next:"Página siguiente",
+  contents:"Índice", lang_pair:"Idiomas", src_lang:"Idioma del libro", tgt_lang:"Traducir al", lang_auto:"Detectar automáticamente",
+  translating:"Traduciendo esta página…", translate_page:"Traducir página", retry:"Reintentar",
+  need_key:"Añade tu clave de API de Anthropic para activar la traducción.", open_settings:"Abrir ajustes",
+  legend_expr:"Expresión", legend_saved:"En tu vocabulario", legend_keys:"Toca una palabra, selecciona una frase, usa ← → para pasar página",
+  save_word:"Guardar palabra", saved_remove:"Guardada — quitar", speak:"Pronunciar", expression:"expresión", saved_toast:"Guardada en el vocabulario",
+  err_no_key:"Añade tu clave de API de Anthropic en Ajustes para activar la traducción.",
+  err_bad_key:"La clave de API fue rechazada. Revísala en Ajustes.",
+  err_rate:"Demasiadas solicitudes ahora mismo. Espera un minuto y vuelve a intentarlo.",
+  err_overloaded:"El servicio de traducción está ocupado. Inténtalo de nuevo en un momento.",
+  err_offline:"Sin conexión a internet. Las páginas ya traducidas siguen disponibles.",
+  err_bad_model:"Este modelo no está disponible para tu clave: ",
+  err_generic:"No se pudo traducir",
+  err_no_consent:"La traducción está desactivada porque no se permite enviar texto a Claude. Puedes permitirlo en Ajustes.",
+  consent_title:"Traducción con IA",
+  consent_1:"Para traducir, Glossa envía texto a <b>Claude</b>, un servicio de IA de <b>Anthropic, PBC</b> (EE. UU.), usando tu propia clave de API.",
+  consent_2:"<b>Se envía:</b> el texto de la página que lees, las palabras o frases que seleccionas con la oración que las rodea, y el título y el autor del libro.",
+  consent_3:"<b>Nunca se envía:</b> tu vocabulario, los archivos completos de los libros ni datos de tu dispositivo. Glossa no tiene servidor propio; las solicitudes van directamente a Anthropic.",
+  consent_4:"Puedes retirar este permiso en cualquier momento en Ajustes.",
+  allow:"Permitir", not_now:"Ahora no",
+  s_reading:"Lectura", s_translation:"Traducción", s_interface:"Interfaz",
+  ui_lang:"Idioma de la interfaz", api_key:"Clave de API de Anthropic", key_saved:"Guardada en este dispositivo.",
+  key_hint:"Se guarda solo en este dispositivo. Créala en console.anthropic.com → API keys.",
+  check:"Comprobar", checking:"Comprobando…", key_ok:"La clave funciona.",
+  consent_toggle:"Permitir enviar texto a Claude (Anthropic) para traducir",
+  quality:"Calidad de traducción", q_fast:"Rápida", q_std:"Estándar", q_lit:"Literaria",
+  q_hint:"Literaria usa el modelo más potente: conserva mejor el estilo del autor, pero es más lenta y cuesta más.",
+  view:"Traducción", v_side:"Al lado", v_hide:"Oculta hasta tocar", v_orig:"Solo original",
+  text_size:"Tamaño del texto", auto:"Traducir páginas automáticamente y preparar la siguiente", done:"Listo",
+  t_all:"Todas", t_book:"Este libro", t_learning:"Aprendiendo", t_known:"Sabidas", search:"Buscar", cards:"Tarjetas", export:"Exportar",
+  empty_vocab:"Aún no hay nada guardado. Toca una palabra del texto o selecciona una frase y guárdala.",
+  mark_known:"Marcar como sabida", mark_learning:"Volver a aprendiendo", del:"Eliminar", st_learning:"aprendiendo", st_known:"sabida",
+  card_of:"{n} de {t}", show:"Mostrar traducción", forgot:"No la recuerdo", remember:"La recuerdo", cards_done:"¡Terminado!", reviewed:"Palabras repasadas: {n}", to_list:"Volver a la lista",
+  export_title:"Exportar vocabulario", exp_csv:"CSV para Excel o Google Sheets", exp_anki:"Archivo de texto para Anki: palabra, traducción, contexto", exp_json:"Copia de seguridad completa (JSON)", exp_restore:"Restaurar una copia…",
+  restored:"Palabras restauradas: {n}", not_backup:"Este archivo no es una copia de Glossa.", close:"Cerrar", share_failed:"No se pudo compartir el archivo.", file_failed:"No se pudo abrir el archivo.",
+  first_run:"Añade tu clave de API en Ajustes para activar la traducción.",
+  same_lang:"El libro ya está en {lang}. Elige el idioma al que traducir.", choose_lang:"Elegir idioma"
+},
+ru:{
+  lib_title:"Читайте в оригинале. Перевод ждёт на полях.",
+  lib_lead:"Откройте книгу — перевод встанет рядом с каждым абзацем. Нажмите на слово, чтобы узнать, что оно значит именно здесь, выделите фразу, сохраните новое.",
+  lib_note:"Книги, переводы и ваш словарь хранятся на этом устройстве.",
+  add_book:"Добавить книгу", add_hint:"PDF, EPUB, FB2 или TXT, либо перетащите файл сюда",
+  pages_n:"{n} стр.", page_n:"Стр. {n}", remove_book:"Убрать с полки",
+  loading_book:"Открываю книгу…", reading_file:"Читаю файл…", pdf_progress:"Читаю PDF: страница {n} из {t}…",
+  book_added:"Книга добавлена.", open_failed:"Не удалось открыть «{name}»: {err}", no_text:"в файле нет текста. Сканы без текстового слоя не читаются.",
+  back:"К полке", vocab:"Словарь", settings:"Настройки", prev:"Предыдущая страница", next:"Следующая страница",
+  contents:"Оглавление", lang_pair:"Языки", src_lang:"Язык книги", tgt_lang:"Переводить на", lang_auto:"Определить автоматически",
+  translating:"Перевожу страницу…", translate_page:"Перевести страницу", retry:"Повторить",
+  need_key:"Добавьте ключ Anthropic API, чтобы включить перевод.", open_settings:"Открыть настройки",
+  legend_expr:"Выражение", legend_saved:"В вашем словаре", legend_keys:"Нажмите на слово, выделите фразу, ← → листают страницы",
+  save_word:"Сохранить слово", saved_remove:"Сохранено — убрать", speak:"Произнести", expression:"выражение", saved_toast:"Добавлено в словарь",
+  err_no_key:"Добавьте ключ Anthropic API в настройках, чтобы включить перевод.",
+  err_bad_key:"Ключ API не подошёл. Проверьте его в настройках.",
+  err_rate:"Слишком много запросов. Подождите минуту и повторите.",
+  err_overloaded:"Сервис перевода перегружен. Повторите чуть позже.",
+  err_offline:"Нет интернета. Уже переведённые страницы по-прежнему доступны.",
+  err_bad_model:"Эта модель недоступна для вашего ключа: ",
+  err_generic:"Не удалось перевести",
+  err_no_consent:"Перевод выключен: отправка текста в Claude не разрешена. Разрешить можно в настройках.",
+  consent_title:"Перевод с помощью ИИ",
+  consent_1:"Для перевода Glossa отправляет текст в <b>Claude</b> — ИИ‑сервис компании <b>Anthropic, PBC</b> (США), используя ваш собственный ключ API.",
+  consent_2:"<b>Отправляется:</b> текст открытой страницы, выбранные слова и фразы вместе с предложением вокруг них, название и автор книги.",
+  consent_3:"<b>Никогда не отправляется:</b> ваш словарь, файлы книг целиком, данные об устройстве. У Glossa нет своего сервера — запросы идут напрямую в Anthropic.",
+  consent_4:"Согласие можно отозвать в любой момент в настройках.",
+  allow:"Разрешить", not_now:"Не сейчас",
+  s_reading:"Чтение", s_translation:"Перевод", s_interface:"Интерфейс",
+  ui_lang:"Язык интерфейса", api_key:"Ключ Anthropic API", key_saved:"Сохранён на этом устройстве.",
+  key_hint:"Хранится только на этом устройстве. Создать: console.anthropic.com → API keys.",
+  check:"Проверить", checking:"Проверяю…", key_ok:"Ключ работает.",
+  consent_toggle:"Разрешаю отправлять текст в Claude (Anthropic) для перевода",
+  quality:"Качество перевода", q_fast:"Быстрый", q_std:"Стандарт", q_lit:"Литературный",
+  q_hint:"«Литературный» — самая сильная модель: лучше передаёт стиль автора, но работает медленнее и стоит дороже.",
+  view:"Перевод", v_side:"Рядом", v_hide:"Скрыт до нажатия", v_orig:"Только оригинал",
+  text_size:"Размер текста", auto:"Переводить страницы автоматически и готовить следующую", done:"Готово",
+  t_all:"Все", t_book:"Эта книга", t_learning:"Учу", t_known:"Знаю", search:"Поиск", cards:"Карточки", export:"Экспорт",
+  empty_vocab:"Пока ничего не сохранено. Нажмите на слово в тексте или выделите фразу и сохраните её.",
+  mark_known:"Отметить как выученное", mark_learning:"Вернуть в «Учу»", del:"Удалить", st_learning:"учу", st_known:"знаю",
+  card_of:"{n} из {t}", show:"Показать перевод", forgot:"Не помню", remember:"Помню", cards_done:"Готово!", reviewed:"Повторено слов: {n}", to_list:"К списку",
+  export_title:"Экспорт словаря", exp_csv:"CSV для Excel или Google Таблиц", exp_anki:"Текстовый файл для Anki: слово, перевод, контекст", exp_json:"Полная резервная копия (JSON)", exp_restore:"Восстановить из копии…",
+  restored:"Восстановлено слов: {n}", not_backup:"Этот файл не похож на копию Glossa.", close:"Закрыть", share_failed:"Не удалось поделиться файлом.", file_failed:"Не удалось открыть файл.",
+  first_run:"Добавьте ключ API в настройках, чтобы включить перевод.",
+  same_lang:"Книга и так на языке «{lang}». Выберите, на какой язык переводить.", choose_lang:"Выбрать язык"
+}};
+const UI_LANGS={en:"English",es:"Español",ru:"Русский"};
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function detectUi(){const l=(navigator.language||"en").slice(0,2).toLowerCase();return I18N[l]?l:"en"}
+
+/* ================= constants & state ================= */
+const LANG_CODES=["ro","en","es","fr","de","it","pt","ru","uk","pl","cs","sk","nl","sv","no","da","fi","hu","el","tr","bg","sr","hr","ca","he","ar","ja","zh","ko","la"];
+const LNAME_EN={ro:"Romanian",en:"English",es:"Spanish",fr:"French",de:"German",it:"Italian",pt:"Portuguese",ru:"Russian",uk:"Ukrainian",pl:"Polish",cs:"Czech",sk:"Slovak",nl:"Dutch",sv:"Swedish",no:"Norwegian",da:"Danish",fi:"Finnish",hu:"Hungarian",el:"Greek",tr:"Turkish",bg:"Bulgarian",sr:"Serbian",hr:"Croatian",ca:"Catalan",he:"Hebrew",ar:"Arabic",ja:"Japanese",zh:"Chinese",ko:"Korean",la:"Latin"};
+const PAGE_CHARS=2400;
+const PIGMENTS=[ // cover palettes: [background, ink, accent]
+  ["#24326e","#eef0fa","#e1b85b"],["#1f5a4e","#eaf4f0","#f1d27a"],["#7a2a22","#f8ece8","#f0c56a"],
+  ["#2b2f45","#ecebe4","#93a7f2"],["#5a4a1e","#f6f0dc","#f5d98a"],["#3d2a52","#f1ecf7","#e6b8d0"]];
+let BUILTIN=[];
+const S={
+  book:null,pages:[],page:0,toc:[],
+  vocab:new Map(),savedForms:new Set(),savedPhrases:[],
+  trCache:new Map(),pending:new Map(),lookCache:new Map(),
+  settings:Object.assign({mode:"par",fs:20,tgt:null,auto:true,tier:"default",ui:null},lsGet("pb_settings")||{}),
+};
+if(!S.settings.ui)S.settings.ui=detectUi();
+if(!S.settings.tgt)S.settings.tgt=S.settings.ui;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function toast(msg,ms=2200){const t=$("toast");t.textContent=msg;t.classList.remove("hidden");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.add("hidden"),ms)}
+function t(k,v){let s=(I18N[S.settings.ui]||I18N.en)[k]??I18N.en[k]??k;if(v)for(const n in v)s=s.replace("{"+n+"}",v[n]);return s}
+function saveSettings(){lsSet("pb_settings",S.settings)}
+function toast(msg,ms=2400){const el=$("toast");el.textContent=msg;el.classList.remove("hidden");clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.add("hidden"),ms)}
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
 function safeId(s){return s.replace(/[^A-Za-z0-9_\-.~:@+]/g,"_").slice(0,180)}
+let _dn=null;
+function langName(code){
+  if(!code||code==="auto")return t("lang_auto");
+  try{if(!_dn||_dn.l!==S.settings.ui){_dn=new Intl.DisplayNames([S.settings.ui],{type:"language"});_dn.l=S.settings.ui}
+    const n=_dn.of(code);if(n&&n!==code)return n.charAt(0).toLocaleUpperCase(S.settings.ui)+n.slice(1)}catch(e){}
+  return LNAME_EN[code]||code;
+}
+function applyI18n(){
+  document.documentElement.lang=S.settings.ui;
+  document.querySelectorAll("[data-t]").forEach(el=>el.textContent=t(el.dataset.t));
+  document.querySelectorAll("[data-t-title]").forEach(el=>{el.title=t(el.dataset.tTitle);el.setAttribute("aria-label",t(el.dataset.tTitle))});
+}
+const icon=(n,cls="i")=>`<svg class="${cls}"><use href="#i-${n}"/></svg>`;
 
 /* ================= storage (IndexedDB) ================= */
 let _db=null;
@@ -254,39 +493,27 @@ async function idbDelIn(store,id){try{const d=await idb();await new Promise(ok=>
 async function idbClear(store){try{const d=await idb();await new Promise(ok=>{const t=d.transaction(store,"readwrite");t.objectStore(store).clear();t.oncomplete=ok;t.onerror=ok})}catch(e){}}
 if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
 
+
+
 /* ================= vocabulary ================= */
 async function loadVocab(){const arr=await idbAllOf("vocab");S.vocab=new Map(arr.map(v=>[v.id,v]));vocabChanged()}
 async function putVocab(v){S.vocab.set(v.id,v);vocabChanged();await idbPutIn("vocab",v)}
 async function delVocab(id){S.vocab.delete(id);vocabChanged();await idbDelIn("vocab",id)}
 function vocabChanged(){
-  S.savedForms=new Set(); S.savedPhrases=[];
+  S.savedForms=new Set();S.savedPhrases=[];
   for(const v of S.vocab.values()){
-    const forms=[v.term,v.lemma].filter(Boolean).map(s=>s.toLowerCase().trim());
-    for(const f of forms){ if(/\s/.test(f)) S.savedPhrases.push(f); else S.savedForms.add(f) }
+    for(const f of [v.term,v.lemma].filter(Boolean).map(s=>s.toLowerCase().trim())){if(/\s/.test(f))S.savedPhrases.push(f);else S.savedForms.add(f)}
   }
-  const n=S.vocab.size; $("dictCount").textContent=n; $("libCount").textContent=n;
-  if(S.book && !$("readView").classList.contains("hidden")) rehighlight();
-  if(!$("drawer").classList.contains("hidden")) renderDrawer();
+  const n=S.vocab.size;for(const id of["dictCount","libCount"]){$(id).textContent=n||"";$(id).dataset.n=n}
+  if(S.book&&!$("readView").classList.contains("hidden"))rehighlight();
+  if(!$("drawer").classList.contains("hidden"))renderDrawer();
 }
 
 /* ================= translation cache ================= */
 function trKey(pi){return S.book.id+"~"+S.settings.tgt+"~"+(S.settings.tier||"default")+"~"+pi}
-async function getTr(pi){
-  const k=trKey(pi);
-  if(S.trCache.has(k)) return S.trCache.get(k);
-  const val=await idbGet("tr",k);
-  if(val) S.trCache.set(k,val);
-  return val;
-}
+async function getTr(pi){const k=trKey(pi);if(S.trCache.has(k))return S.trCache.get(k);const v=await idbGet("tr",k);if(v)S.trCache.set(k,v);return v}
 async function putTr(pi,val){const k=trKey(pi);val=Object.assign({id:k},val);S.trCache.set(k,val);await idbPutIn("tr",val)}
 
-/* ================= Claude calls ================= */
-function parseJSON(text){
-  if(typeof text!=="string") return text;
-  const s=text.indexOf("{"),e=text.lastIndexOf("}");
-  if(s<0||e<0) throw new Error("bad json");
-  return JSON.parse(text.slice(s,e+1));
-}
 /* ================= consent (App Store 5.1.2(i)) ================= */
 function hasConsent(){return lsGet("pr_ai_consent")===true}
 let consentWait=null;
@@ -295,15 +522,11 @@ function ensureConsent(){
   if(consentWait)return consentWait;
   consentWait=new Promise(done=>{
     const m=$("consent");
-    m.innerHTML=`<h3>Перевод с помощью ИИ</h3>
-      <p>Для перевода приложение отправляет данные в сторонний ИИ‑сервис <b>Claude</b> компании <b>Anthropic, PBC</b> (США), используя ваш ключ API.</p>
-      <p><b>Отправляется:</b> текст открытой страницы книги, слова и фразы, которые вы выбрали, и предложение вокруг них, название и автор книги.</p>
-      <p><b>Не отправляется:</b> ваш словарь, файлы книг целиком, данные об устройстве. У приложения нет своего сервера — запросы идут напрямую в Anthropic.</p>
-      <p>Зачем: чтобы показать перевод и объяснение слов. Согласие можно отозвать в настройках.</p>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn" id="cNo">Не сейчас</button><button class="btn primary" id="cYes">Разрешить</button></div>`;
+    m.innerHTML=`<h3>${t("consent_title")}</h3><p>${t("consent_1")}</p><p>${t("consent_2")}</p><p>${t("consent_3")}</p><p>${t("consent_4")}</p>
+      <div class="row-end"><button class="btn quiet" id="cNo">${t("not_now")}</button><button class="btn primary" id="cYes">${t("allow")}</button></div>`;
     m.classList.remove("hidden");$("shade2").classList.remove("hidden");
-    const fin=v=>{lsSet("pr_ai_consent",v);m.classList.add("hidden");$("shade2").classList.add("hidden");consentWait=null;done(v)};
-    $("cYes").onclick=()=>fin(true);$("cNo").onclick=()=>{m.classList.add("hidden");$("shade2").classList.add("hidden");consentWait=null;done(false)};
+    const fin=v=>{if(v)lsSet("pr_ai_consent",true);m.classList.add("hidden");$("shade2").classList.add("hidden");consentWait=null;done(v)};
+    $("cYes").onclick=()=>fin(true);$("cNo").onclick=()=>fin(false);
   });
   return consentWait;
 }
@@ -314,65 +537,47 @@ const Plug=n=>NATIVE&&window.Capacitor.Plugins?window.Capacitor.Plugins[n]:null;
 function haptic(){const h=Plug("Haptics");if(h)h.impact({style:"LIGHT"}).catch(()=>{})}
 function b64ToBytes(b64){const bin=atob(b64);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
 async function openNativeUrl(url){
-  // книга, открытая из «Файлов» / «Открыть в…»
   const fs=Plug("Filesystem");if(!fs||!url||!/^file:/.test(url))return;
-  try{
-    const r=await fs.readFile({path:url});
-    const name=decodeURIComponent(url.split("/").pop()||"book");
-    await renderLibrary();
-    handleFile(new File([b64ToBytes(r.data)],name));
-  }catch(e){toast("Не удалось открыть файл")}
+  try{const r=await fs.readFile({path:url});const name=decodeURIComponent(url.split("/").pop()||"book");await showShelf();handleFile(new File([b64ToBytes(r.data)],name))}
+  catch(e){toast(t("file_failed"))}
 }
 function initNative(){
   if(!NATIVE)return;
   const app=Plug("App");
   if(app){app.addListener("appUrlOpen",e=>openNativeUrl(e.url));app.getLaunchUrl&&app.getLaunchUrl().then(r=>r&&r.url&&openNativeUrl(r.url)).catch(()=>{})}
-  $("fileIn").removeAttribute("accept"); // iOS не знает расширения .fb2 — показываем все файлы
+  $("fileIn").removeAttribute("accept");
 }
 
+/* ================= Claude API ================= */
 const MODELS={quick:"claude-haiku-5-5",default:"claude-sonnet-5-5",complex:"claude-opus-5-5"};
 function apiKey(){return (lsGet("pr_apikey")||"").trim()}
 function hasKey(){return !!apiKey()}
+function parseJSON(text){if(typeof text!=="string")return text;const s=text.indexOf("{"),e=text.lastIndexOf("}");if(s<0||e<0)throw new Error("bad json");return JSON.parse(text.slice(s,e+1))}
 async function askJSON(prompt,opts={}){
   const key=apiKey();
-  if(!key) throw {code:"no_key"};
-  if(!(await ensureConsent())) throw {code:"no_consent"};
+  if(!key)throw{code:"no_key"};
+  if(!(await ensureConsent()))throw{code:"no_consent"};
   let r;
-  try{
-    r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{
-      "content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01",
-      "anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:(S.settings.models&&S.settings.models[opts.modelTier])||MODELS[opts.modelTier||"default"],max_tokens:opts.maxTokens||8000,
-        messages:[{role:"user",content:prompt}]})});
-  }catch(e){throw {code:"offline"}}
-  if(!r.ok){
-    let msg="";try{msg=(await r.json()).error.message}catch(e){}
-    throw {code:r.status===401?"bad_key":r.status===429?"rate_limited":r.status===529||r.status>=500?"overloaded":r.status===404?"bad_model":"api_error",message:msg};
-  }
+  try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:MODELS[opts.modelTier||"default"],max_tokens:opts.maxTokens||8000,messages:[{role:"user",content:prompt}]})})}
+  catch(e){throw{code:"offline"}}
+  if(!r.ok){let msg="";try{msg=(await r.json()).error.message}catch(e){}
+    throw{code:r.status===401?"bad_key":r.status===429?"rate_limited":r.status===529||r.status>=500?"overloaded":r.status===404?"bad_model":"api_error",message:msg}}
   const d=await r.json();
-  const text=(d.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("");
-  return parseJSON(text);
+  return parseJSON((d.content||[]).filter(c=>c.type==="text").map(c=>c.text).join(""));
 }
 function errText(e){
   const c=e&&e.code;
-  return c==="no_key"?"Добавьте ключ Anthropic API в настройках (кнопка Aa).":
-    c==="bad_key"?"Ключ API не подошёл — проверьте его в настройках.":
-    c==="rate_limited"?"Слишком много запросов — подождите минуту.":
-    c==="overloaded"?"Сервис перегружен — попробуйте ещё раз.":
-    c==="no_consent"?"Перевод выключен: вы не разрешили отправку текста в Claude. Включить — в настройках.":
-    c==="offline"?"Нет интернета. Уже переведённые страницы доступны офлайн.":
-    c==="bad_model"?"Модель недоступна для вашего ключа: "+(e.message||""):
-    "Не удалось перевести"+(e&&e.message?": "+e.message:".");
+  return c==="no_key"?t("err_no_key"):c==="bad_key"?t("err_bad_key"):c==="rate_limited"?t("err_rate"):c==="overloaded"?t("err_overloaded"):
+    c==="offline"?t("err_offline"):c==="no_consent"?t("err_no_consent"):c==="bad_model"?t("err_bad_model")+(e.message||""):t("err_generic")+(e&&e.message?": "+e.message:".");
 }
 function srcName(){const l=S.book.lang;return l&&l!=="auto"?LNAME_EN[l]||l:"the source language (detect it)"}
 function tgtName(){return LNAME_EN[S.settings.tgt]||S.settings.tgt}
-
-async function translatePage(pi,{prefetch=false}={}){
+async function translatePage(pi){
   const k=trKey(pi);
-  if(S.pending.has(k)) return S.pending.get(k);
+  if(S.pending.has(k))return S.pending.get(k);
   const pr=(async()=>{
-    const pg=S.pages[pi];
-    const items=pg.map(i=>({i,t:S.book.paras[i].t}));
+    const items=S.pages[pi].map(i=>({i,t:S.book.paras[i].t}));
     const prevCtx=pi>0?S.pages[pi-1].slice(-2).map(i=>S.book.paras[i].t).join("\n"):"";
     const prompt=`You are a literary translator helping a language learner read a book in parallel.
 Book: "${S.book.title}"${S.book.author?" by "+S.book.author:""}. Translate from ${srcName()} into ${tgtName()}.
@@ -380,32 +585,29 @@ Rules:
 - Translate EVERY item separately, faithfully and naturally, keeping the meaning and tone of the original; do not merge or skip items.
 - For each item also list 0-4 idioms, set expressions, phrasal verbs or non-obvious collocations a learner should notice. "s" must be copied EXACTLY as it appears in the original text (same letters, same case), "t" is its meaning in ${tgtName()}, "n" an optional very short note in ${tgtName()} (literal meaning, register). Skip trivial single words.
 - Headings are translated as headings.
-${S.book.lang==="auto"||!S.book.lang?'- Also return "lang": the ISO 639-1 code of the source language.':""}
+${!S.book.lang||S.book.lang==="auto"?'- Also return "lang": the ISO 639-1 code of the source language.':""}
 Return ONLY JSON: {"lang":"xx","p":[{"i":<item number>,"tr":"<translation>","ex":[{"s":"...","t":"...","n":"..."}]}]}
 ${prevCtx?"Previous context (do not translate):\n"+prevCtx+"\n":""}
 Items:
 ${JSON.stringify(items)}`;
     const res=await askJSON(prompt,{modelTier:S.settings.tier||"default"});
     const out={};
-    for(const p of (res.p||[])) if(p&&p.i!=null) out[p.i]={tr:String(p.tr||""),ex:Array.isArray(p.ex)?p.ex.filter(x=>x&&x.s).slice(0,6):[]};
-    if(res.lang && (!S.book.lang||S.book.lang==="auto") && LNAME_EN[res.lang]){S.book.lang=res.lang;syncLangSelects();saveBookMeta()}
-    const val={p:out,at:Date.now()};
-    await putTr(pi,val);
-    return val;
+    for(const p of(res.p||[]))if(p&&p.i!=null)out[p.i]={tr:String(p.tr||""),ex:Array.isArray(p.ex)?p.ex.filter(x=>x&&x.s).slice(0,6):[]};
+    if(res.lang&&(!S.book.lang||S.book.lang==="auto")&&LNAME_EN[res.lang]){S.book.lang=res.lang;saveBookMeta();updatePair()}
+    const val={p:out,at:Date.now()};await putTr(pi,val);return val;
   })();
   S.pending.set(k,pr);
   try{return await pr}finally{S.pending.delete(k)}
 }
-
 async function lookup(text,ctx){
   const key=S.settings.tgt+"|"+text.toLowerCase()+"|"+ctx.slice(0,80);
-  if(S.lookCache.has(key)) return S.lookCache.get(key);
+  if(S.lookCache.has(key))return S.lookCache.get(key);
   const prompt=`A learner reading a ${srcName()} book tapped "${text}" in this sentence:
 "${ctx}"
 Explain it for a ${tgtName()} speaker. Return ONLY JSON:
 {"lemma":"dictionary form in the source language (infinitive/nominative singular; for a phrase, its base form)","pos":"part of speech in ${tgtName()}, short","tr":"best translation in THIS context, in ${tgtName()}","alt":"2-4 other common meanings in ${tgtName()}, comma separated","note":"1-2 short sentences in ${tgtName()}: grammar form here (tense, case, gender, clitics etc.) or idiom usage"}`;
   const r=await askJSON(prompt,{modelTier:"quick",maxTokens:600});
-  S.lookCache.set(key,r); return r;
+  S.lookCache.set(key,r);return r;
 }
 
 /* ================= book parsing ================= */
@@ -515,84 +717,79 @@ async function parsePdf(buf,name,onProg){
   return {title:meta?.info?.Title||name.replace(/\.pdf$/i,""),author:meta?.info?.Author||"",lang:"auto",paras:out};
 }
 
+
+
 async function idbAll(){return idbAllOf("books")}
-async function idbPut(b){return idbPutIn("books",b)}
-async function idbDel(id){return idbDelIn("books",id)}
 const sessionBooks=new Map();
 
-/* ================= library ================= */
-async function loadBuiltin(){
-  try{const r=await fetch("books/index.json");if(r.ok){const l=await r.json();BUILTIN=Array.isArray(l)?l:[]}}catch(e){BUILTIN=[]}
+/* ================= shelf ================= */
+async function loadBuiltin(){try{const r=await fetch("books/index.json");if(r.ok){const l=await r.json();BUILTIN=Array.isArray(l)?l:[]}}catch(e){BUILTIN=[]}}
+function coverHtml(b,removable){
+  const prog=lsGet("pb_progress")||{},p=prog[b.id];
+  const [bg,ink,acc]=PIGMENTS[parseInt(hash(b.id),36)%PIGMENTS.length];
+  const total=b.paras?Math.ceil(b.paras.reduce((a,x)=>a+x.t.length,0)/PAGE_CHARS):(b.pages||0);
+  const init=(b.title||"?").trim().replace(/^[^\p{L}]+/u,"").charAt(0).toUpperCase();
+  const pct=p!=null&&total?Math.min(100,Math.round((p+1)/total*100)):0;
+  return `<div class="cover" tabindex="0" role="button" data-id="${esc(b.id)}" style="--c-bg:${bg};--c-ink:${ink};--c-accent:${acc}">
+    <div class="init">${esc(init)}</div><div class="t">${esc(b.title)}</div><div class="a">${esc(b.author||"")}</div>
+    <div class="m"><span>${b.lang&&b.lang!=="auto"?esc(langName(b.lang)):""}</span><span>${p!=null?esc(t("page_n",{n:p+1})):total?esc(t("pages_n",{n:total})):""}</span></div>
+    ${pct?`<div class="prog"><i style="width:${pct}%"></i></div>`:""}
+    ${removable?`<button class="icon-btn x" data-del="${esc(b.id)}" title="${esc(t("remove_book"))}" aria-label="${esc(t("remove_book"))}">${icon("close")}</button>`:""}</div>`;
 }
-async function renderLibrary(){
-  $("libView").classList.remove("hidden");$("readView").classList.add("hidden");hidePop();
+async function showShelf(){
+  $("libView").classList.remove("hidden");$("readView").classList.add("hidden");hideCard();S.book=null;
   const local=await idbAll();
-  for(const b of sessionBooks.values()) if(!local.find(x=>x.id===b.id)) local.push(b);
-  const prog=lsGet("pb_progress")||{};
-  const card=(b,del)=>{
-    const p=prog[b.id];
-    return `<div class="book" data-id="${esc(b.id)}"><div class="t">${esc(b.title)}</div><div class="a">${esc(b.author||"")}</div>
-      <div class="m">${esc(LNAME[b.lang]||"язык: авто")}${b.paras?` · ${Math.ceil(b.paras.reduce((a,p)=>a+p.t.length,0)/PAGE_CHARS)} стр.`:""}${p?` · стр. ${p+1}`:""}</div>
-      ${del?`<button class="icon x" data-del="${esc(b.id)}" title="Удалить">✕</button>`:""}</div>`;
-  };
-  $("shelf").innerHTML=BUILTIN.map(b=>card(b,false)).join("")+local.map(b=>card(b,true)).join("")+
-    `<div class="book add" id="addBook"><b>＋</b><div>Загрузить книгу</div><div class="m" style="margin-top:6px">PDF · FB2 · EPUB · TXT<br>или перетащите файл сюда</div></div>`;
-  $("shelf").onclick=async e=>{
-    const del=e.target.closest("[data-del]");
-    if(del){e.stopPropagation();await idbDel(del.dataset.del);sessionBooks.delete(del.dataset.del);renderLibrary();return}
-    if(e.target.closest("#addBook")){$("fileIn").click();return}
-    const c=e.target.closest(".book");if(!c)return;
-    openBook(c.dataset.id);
-  };
+  for(const b of sessionBooks.values())if(!local.find(x=>x.id===b.id))local.push(b);
+  $("shelf").innerHTML=BUILTIN.map(b=>coverHtml(b,false)).join("")+local.map(b=>coverHtml(b,true)).join("")+
+    `<div class="cover add" tabindex="0" role="button" id="addBook"><div class="plus">+</div><div>${esc(t("add_book"))}</div><small>${esc(t("add_hint"))}</small></div>`;
 }
+$("shelf").addEventListener("click",async e=>{
+  const del=e.target.closest("[data-del]");
+  if(del){e.stopPropagation();await idbDelIn("books",del.dataset.del);sessionBooks.delete(del.dataset.del);showShelf();return}
+  if(e.target.closest("#addBook")){$("fileIn").click();return}
+  const c=e.target.closest(".cover");if(c)openBook(c.dataset.id);
+});
+$("shelf").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("cover")){e.preventDefault();e.target.click()}});
 async function handleFile(file){
-  const name=file.name, ext=name.split(".").pop().toLowerCase();
-  const note=$("libNote");note.innerHTML="Читаю файл…";
+  const name=file.name,ext=name.split(".").pop().toLowerCase(),note=$("libNote");
+  note.classList.remove("err");note.textContent=t("reading_file");
   try{
     let b;
-    if(ext==="pdf") b=await parsePdf(await file.arrayBuffer(),name,(n,t)=>note.textContent=`Распознаю PDF: страница ${n} из ${t}…`);
-    else if(ext==="epub") b=await parseEpub(await file.arrayBuffer(),name);
-    else if(ext==="fb2"||ext==="xml") b=parseFb2(await file.text(),name);
+    if(ext==="pdf")b=await parsePdf(await file.arrayBuffer(),name,(n,tt)=>note.textContent=t("pdf_progress",{n,t:tt}));
+    else if(ext==="epub")b=await parseEpub(await file.arrayBuffer(),name);
+    else if(ext==="fb2"||ext==="xml")b=parseFb2(await file.text(),name);
     else b=parseTxt(await file.text(),name);
-    if(!b.paras.length) throw new Error("в файле не найден текст (возможно, это скан без текстового слоя)");
-    b.id="u-"+hash(b.title+"|"+b.paras.length+"|"+(b.paras[Math.floor(b.paras.length/2)]?.t||""));
-    b.added=Date.now();
-    sessionBooks.set(b.id,b); await idbPut(b);
-    note.textContent="Книга добавлена.";
-    openBook(b.id);
-  }catch(e){note.innerHTML=`<span class="err">Не получилось открыть «${esc(name)}»: ${esc(e.message||e)}</span>`}
+    if(!b.paras.length)throw new Error(t("no_text"));
+    b.id="u-"+hash(b.title+"|"+b.paras.length+"|"+(b.paras[Math.floor(b.paras.length/2)]?.t||""));b.added=Date.now();
+    sessionBooks.set(b.id,b);await idbPutIn("books",b);
+    note.textContent=t("book_added");openBook(b.id);
+  }catch(e){note.classList.add("err");note.textContent=t("open_failed",{name,err:e.message||e})}
 }
 $("fileIn").onchange=e=>{const f=e.target.files[0];if(f)handleFile(f);e.target.value=""};
-document.addEventListener("dragover",e=>{e.preventDefault();$("shelf").classList.add("drop")});
-document.addEventListener("dragleave",e=>{if(!e.relatedTarget)$("shelf").classList.remove("drop")});
-document.addEventListener("drop",e=>{e.preventDefault();$("shelf").classList.remove("drop");const f=e.dataTransfer.files[0];if(f)handleFile(f)});
+document.addEventListener("dragover",e=>{e.preventDefault();$("libView").classList.add("drop")});
+document.addEventListener("dragleave",e=>{if(!e.relatedTarget)$("libView").classList.remove("drop")});
+document.addEventListener("drop",e=>{e.preventDefault();$("libView").classList.remove("drop");const f=e.dataTransfer.files[0];if(f&&S.book==null)handleFile(f)});
 
-/* ================= open book & paginate ================= */
+/* ================= open & paginate ================= */
 async function openBook(id){
   let b=BUILTIN.find(x=>x.id===id);
-  if(b){
-    if(!b.paras){$("libNote").textContent="Загружаю книгу…";const r=await fetch(b.url);const d=await r.json();b.paras=d.paras}
-  } else b=sessionBooks.get(id)||(await idbAll()).find(x=>x.id===id);
+  if(b){if(!b.paras){$("libNote").textContent=t("loading_book");const d=await(await fetch(b.url)).json();b.paras=d.paras;$("libNote").textContent=t("lib_note")}}
+  else b=sessionBooks.get(id)||await idbGet("books",id);
   if(!b)return;
-  const lm=(lsGet("pb_bookmeta")||{})[b.id]; if(lm&&lm.lang)b.lang=lm.lang;
-  S.book=b; paginate();
-  const prog=lsGet("pb_progress")||{}; S.page=Math.min(prog[b.id]||0,S.pages.length-1);
+  const lm=(lsGet("pb_bookmeta")||{})[b.id];if(lm&&lm.lang)b.lang=lm.lang;
+  S.book=b;paginate();
+  const prog=lsGet("pb_progress")||{};S.page=Math.min(prog[b.id]||0,S.pages.length-1);
   $("libView").classList.add("hidden");$("readView").classList.remove("hidden");
-  $("rTitle").firstChild.textContent=b.title; $("rAuthor").textContent=b.author||"";
-  syncLangSelects(); applySettings();
-  $("toc").innerHTML=S.toc.map(t=>`<option value="${t.page}">${esc(t.label)}</option>`).join("")||`<option>—</option>`;
-  renderPage();
+  $("rTitle").textContent=b.title;
+  updatePair();applySettings();renderPage();scrollTo(0,0);
+  if(b.lang&&b.lang===S.settings.tgt)setTimeout(()=>$("pairBtn").click(),300);
 }
 function saveBookMeta(){const m=lsGet("pb_bookmeta")||{};m[S.book.id]={lang:S.book.lang};lsSet("pb_bookmeta",m)}
 function paginate(){
   const P=S.book.paras;S.pages=[];S.toc=[];let cur=[],n=0,lastBig="";
   P.forEach((p,i)=>{
     if(p.h&&cur.length&&n>400){S.pages.push(cur);cur=[];n=0}
-    if(p.h){
-      const isNum=/^[\dIVXLC]+\.?$/.test(p.t.trim());
-      if(!isNum)lastBig=p.t;
-      S.toc.push({label:isNum&&lastBig?lastBig+" · "+p.t:p.t,page:S.pages.length});
-    }
+    if(p.h){const isNum=/^[\dIVXLC]+\.?$/.test(p.t.trim());if(!isNum)lastBig=p.t;S.toc.push({label:isNum&&lastBig?lastBig+", "+p.t:p.t,page:S.pages.length})}
     cur.push(i);n+=p.t.length;
     if(n>=PAGE_CHARS&&!p.h){S.pages.push(cur);cur=[];n=0}
   });
@@ -605,7 +802,6 @@ function tokenize(text){
   const out=[];
   if(seg){for(const s of seg.segment(text))out.push({s:s.segment,i:s.index,w:s.isWordLike})}
   else{const re=/[\p{L}\p{M}\p{N}'’\-]+|[^\p{L}\p{M}\p{N}'’\-]+/gu;let m;while(m=re.exec(text))out.push({s:m[0],i:m.index,w:/\p{L}/u.test(m[0])})}
-  // merge Romanian/French style clitic hyphen joins kept as separate words: keep as is
   return out;
 }
 function rangesFor(text,list){
@@ -615,224 +811,228 @@ function rangesFor(text,list){
 }
 function renderOrig(i,ex){
   const text=S.book.paras[i].t;
-  const exR=rangesFor(text,(ex||[]).map(e=>e.s));
-  const svR=rangesFor(text,S.savedPhrases);
+  const exR=rangesFor(text,(ex||[]).map(e=>e.s)),svR=rangesFor(text,S.savedPhrases);
   const inR=(R,a,b)=>R.findIndex(([s,e])=>a<e&&b>s);
-  return tokenize(text).map(t=>{
-    if(!t.w)return esc(t.s);
-    const a=t.i,b=t.i+t.s.length;
-    let cls="w";const xi=inR(exR,a,b);
-    if(S.savedForms.has(t.s.toLowerCase())||inR(svR,a,b)>=0)cls+=" sv";
-    if(xi>=0){cls+=" ex"}
-    return `<span class="${cls}" data-o="${a}"${xi>=0?` data-x="${esc(exR[xi][2])}"`:""}>${esc(t.s)}</span>`;
+  return tokenize(text).map(tk=>{
+    if(!tk.w)return esc(tk.s);
+    const a=tk.i,b=tk.i+tk.s.length,xi=inR(exR,a,b);
+    let cls="w";
+    if(S.savedForms.has(tk.s.toLowerCase())||inR(svR,a,b)>=0)cls+=" sv";
+    if(xi>=0)cls+=" ex";
+    return `<span class="${cls}" data-o="${a}"${xi>=0?` data-x="${esc(exR[xi][2])}"`:""}>${esc(tk.s)}</span>`;
   }).join("");
 }
 let curTr=null;
+function updateTocLabel(){
+  let ti=-1;S.toc.forEach((x,k)=>{if(x.page<=S.page)ti=k});
+  $("tocLabel").textContent=ti>=0?S.toc[ti].label:(S.book.author||t("contents"));
+}
 async function renderPage(){
   if(!S.book)return;
-  hidePop();
-  const pi=S.page,pg=S.pages[pi];
+  hideCard();
+  const pi=S.page;
   const prog=lsGet("pb_progress")||{};prog[S.book.id]=pi;lsSet("pb_progress",prog);
-  $("pgInfo").textContent=`стр. ${pi+1} из ${S.pages.length}`;
+  $("pgInfo").textContent=`${pi+1} / ${S.pages.length}`;
+  $("track").style.width=((pi+1)/S.pages.length*100)+"%";
   $("prevP").disabled=pi===0;$("nextP").disabled=pi>=S.pages.length-1;
-  let ti=0;S.toc.forEach((t,k)=>{if(t.page<=pi)ti=k});$("toc").selectedIndex=ti;
-  curTr=null;
-  drawRows(null);
-  $("status").innerHTML="";
+  updateTocLabel();
+  curTr=null;drawRows(null);$("status").innerHTML="";
+  if(S.book.lang&&S.book.lang===S.settings.tgt){$("status").innerHTML=`<span>${esc(t("same_lang",{lang:langName(S.book.lang)}))}</span><button class="btn primary" id="chLang">${esc(t("choose_lang"))}</button>`;$("chLang").onclick=()=>$("pairBtn").click();drawRows({p:{}},true);return}
   const cached=await getTr(pi);
   if(pi!==S.page)return;
   if(cached){curTr=cached;drawRows(cached);prefetch(pi+1);return}
-  if(!hasKey()){$("status").innerHTML=`Чтобы включить перевод, добавьте ключ Anthropic API. <button class="btn primary" id="addKey">Открыть настройки</button>`;$("addKey").onclick=()=>$("setBtn").click();drawRows({p:{}},true);return}
-  if(S.settings.auto) doTranslate(pi);
-  else{$("status").innerHTML=`<button class="btn primary" id="trNow">Перевести страницу</button>`;$("trNow").onclick=()=>doTranslate(pi)}
+  if(!hasKey()){$("status").innerHTML=`<span>${esc(t("need_key"))}</span><button class="btn primary" id="addKey">${esc(t("open_settings"))}</button>`;$("addKey").onclick=openSettings;drawRows({p:{}},true);return}
+  if(S.settings.auto)doTranslate(pi);
+  else{$("status").innerHTML=`<button class="btn primary" id="trNow">${esc(t("translate_page"))}</button>`;$("trNow").onclick=()=>doTranslate(pi)}
 }
 async function doTranslate(pi){
-  $("status").innerHTML=`Перевожу страницу…`;
-  try{
-    const r=await translatePage(pi);
-    if(pi!==S.page)return;
-    curTr=r;drawRows(r);$("status").innerHTML="";prefetch(pi+1);
-  }catch(e){
-    if(pi!==S.page)return;
-    const msg=errText(e);
-    $("status").innerHTML=`<span class="err">${msg}</span> <button class="btn" id="retry">Повторить</button>`;
-    $("retry").onclick=()=>doTranslate(pi);
-    drawRows({p:{}},true);
-  }
+  $("status").innerHTML=`<span>${esc(t("translating"))}</span>`;
+  try{const r=await translatePage(pi);if(pi!==S.page)return;curTr=r;drawRows(r);$("status").innerHTML="";prefetch(pi+1)}
+  catch(e){if(pi!==S.page)return;
+    $("status").innerHTML=`<span class="err">${esc(errText(e))}</span> <button class="btn" id="retry">${esc(t("retry"))}</button>`;
+    $("retry").onclick=()=>doTranslate(pi);drawRows({p:{}},true)}
 }
-async function prefetch(pi){
-  if(!S.settings.auto||!hasKey()||pi>=S.pages.length)return;
-  if(await getTr(pi))return;
-  translatePage(pi,{prefetch:true}).catch(()=>{});
-}
+async function prefetch(pi){if(!S.settings.auto||!hasKey()||!hasConsent()||pi>=S.pages.length)return;if(await getTr(pi))return;translatePage(pi).catch(()=>{})}
 function drawRows(tr,failed){
-  const pg=S.pages[S.page];
-  $("rows").innerHTML=pg.map(i=>{
-    const p=S.book.paras[i],t=tr&&tr.p[i];
-    const right=t?esc(t.tr):failed?"":`<span class="skel" style="width:96%"></span><span class="skel" style="width:88%"></span><span class="skel" style="width:60%"></span>`;
-    return `<div class="row${p.h?" h":""}${p.q?" q":""}" data-i="${i}"><p class="orig" lang="${esc(S.book.lang||"")}">${renderOrig(i,t&&t.ex)}</p><p class="tr">${right}</p></div>`;
+  const pg=S.pages[S.page];let prevH=S.page===0;
+  $("rows").innerHTML=pg.map((i,k)=>{
+    const p=S.book.paras[i],g=tr&&tr.p[i];
+    const cap=!p.h&&!p.q&&prevH&&p.t.length>120;prevH=!!p.h||(prevH&&p.q);
+    const right=g?esc(g.tr):failed?"":`<span class="skel" style="width:94%"></span><span class="skel" style="width:86%"></span><span class="skel" style="width:58%"></span>`;
+    return `<div class="row${p.h?" h":""}${p.q?" q":""}${cap?" cap":""}" data-i="${i}"><p class="orig" lang="${esc(S.book.lang&&S.book.lang!=="auto"?S.book.lang:"")}">${renderOrig(i,g&&g.ex)}</p><p class="gloss" lang="${esc(S.settings.tgt)}">${right}</p></div>`;
   }).join("");
 }
-function rehighlight(){
-  document.querySelectorAll("#rows .row").forEach(r=>{const i=+r.dataset.i;const t=curTr&&curTr.p[i];r.querySelector(".orig").innerHTML=renderOrig(i,t&&t.ex)});
-}
+function rehighlight(){document.querySelectorAll("#rows .row").forEach(r=>{const i=+r.dataset.i,g=curTr&&curTr.p[i];r.querySelector(".orig").innerHTML=renderOrig(i,g&&g.ex)})}
 
-/* ================= interactions: word / phrase popup ================= */
+/* ================= word card ================= */
 function sentenceAround(text,off,len){
   let s=off,e=off+len;
   while(s>0&&!/[.!?…]\s/.test(text.slice(s-2,s)))s--;
   while(e<text.length&&!/[.!?…]/.test(text[e-1]||""))e++;
   return text.slice(s,e).trim().slice(0,400);
 }
-let popState=null;
-function hidePop(){$("pop").classList.add("hidden");document.querySelectorAll(".w.on").forEach(x=>x.classList.remove("on"));popState=null}
-function placePop(rect){
-  const pop=$("pop");pop.classList.remove("hidden");
-  const w=pop.offsetWidth,h=pop.offsetHeight;
-  let x=rect.left+window.scrollX+rect.width/2-w/2; x=Math.max(10,Math.min(x,window.scrollX+document.documentElement.clientWidth-w-10));
-  let y=rect.bottom+window.scrollY+8; if(rect.bottom+h+16>window.innerHeight)y=rect.top+window.scrollY-h-8;
-  pop.style.left=x+"px";pop.style.top=y+"px";
+let cardState=null;
+function hideCard(){$("card").classList.add("hidden");document.querySelectorAll(".w.on").forEach(x=>x.classList.remove("on"));cardState=null}
+function placeCard(rect){
+  const c=$("card");c.classList.remove("hidden");
+  if(matchMedia("(max-width:820px)").matches)return;
+  const w=c.offsetWidth,h=c.offsetHeight;
+  let x=rect.left+scrollX+rect.width/2-w/2;x=Math.max(12,Math.min(x,scrollX+document.documentElement.clientWidth-w-12));
+  let y=rect.bottom+scrollY+10;if(rect.bottom+h+20>innerHeight)y=rect.top+scrollY-h-10;
+  c.style.left=x+"px";c.style.top=y+"px";
 }
-function canSpeak(){return "speechSynthesis" in window}
-function speak(text){try{const u=new SpeechSynthesisUtterance(text);const l=S.book.lang&&S.book.lang!=="auto"?S.book.lang:"";if(l)u.lang=l;u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+const canSpeak=()=>"speechSynthesis" in window;
+function speak(text,lang){try{const u=new SpeechSynthesisUtterance(text);if(lang&&lang!=="auto")u.lang=lang;u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 function vid(term){return safeId((S.book.lang||"xx")+"-"+S.settings.tgt+"-"+term.toLowerCase())}
-function drawPop(){
-  const st=popState;if(!st)return;
-  const r=st.res, saved=S.vocab.get(vid(st.term));
-  $("pop").innerHTML=`<button class="icon x" id="pX">✕</button>
-    <div class="term">${esc(st.term)} ${canSpeak()?`<button class="icon" id="pSpk" title="Произнести">🔊</button>`:""}</div>
-    ${r&&r.lemma&&r.lemma.toLowerCase()!==st.term.toLowerCase()?`<div class="lemma">${esc(r.lemma)}${r.pos?" · "+esc(r.pos):""}</div>`:r&&r.pos?`<div class="lemma">${esc(r.pos)}</div>`:""}
-    ${r?`<div class="trn">${esc(r.tr)}</div>${r.alt?`<div class="alt">${esc(r.alt)}</div>`:""}${r.note?`<div class="nt">${esc(r.note)}</div>`:""}`
-      :st.err?`<div class="nt err">${esc(st.err)}</div>`:`<span class="skel" style="width:70%;margin-top:12px"></span><span class="skel" style="width:90%"></span>`}
-    <div class="acts">${saved?`<button class="btn" id="pDel">✓ В словаре — убрать</button>`:`<button class="btn primary" id="pAdd" ${r?"":"disabled"}>＋ В словарь</button>`}</div>`;
-  $("pX").onclick=hidePop;
-  if($("pSpk"))$("pSpk").onclick=()=>speak(st.term);
-  if($("pAdd"))$("pAdd").onclick=async()=>{
-    const v={id:vid(st.term),term:st.term,lemma:r.lemma||"",pos:r.pos||"",tr:r.tr||"",alt:r.alt||"",note:r.note||"",ctx:st.ctx,
-      book:S.book.title,bookId:S.book.id,src:S.book.lang||"auto",tgt:S.settings.tgt,status:"learn",box:0,added:Date.now()};
-    await putVocab(v);haptic();toast("Добавлено в словарь");drawPop();
+function drawCard(){
+  const st=cardState;if(!st)return;
+  const r=st.res,saved=S.vocab.get(vid(st.term));
+  $("card").innerHTML=`<button class="icon-btn x" id="cX" aria-label="${esc(t("close"))}">${icon("close")}</button>
+    <div class="term">${esc(st.term)}${canSpeak()?`<button class="icon-btn small" id="cSpk" title="${esc(t("speak"))}" aria-label="${esc(t("speak"))}">${icon("speak")}</button>`:""}</div>
+    ${r&&(r.lemma&&r.lemma.toLowerCase()!==st.term.toLowerCase()||r.pos)?`<div class="lemma">${esc([r.lemma&&r.lemma.toLowerCase()!==st.term.toLowerCase()?r.lemma:"",r.pos].filter(Boolean).join(", "))}</div>`:""}
+    ${r?`<div class="tr">${esc(r.tr)}</div>${r.alt?`<div class="alt">${esc(r.alt)}</div>`:""}${r.note?`<div class="note">${esc(r.note)}</div>`:""}`
+      :st.err?`<div class="note err">${esc(st.err)}</div>`:`<span class="skel" style="width:62%;margin-top:14px"></span><span class="skel" style="width:88%"></span>`}
+    <div class="acts">${saved?`<button class="btn" id="cDel">${icon("check")}${esc(t("saved_remove"))}</button>`:`<button class="btn primary" id="cAdd" ${r?"":"disabled"}>${esc(t("save_word"))}</button>`}</div>`;
+  $("cX").onclick=hideCard;
+  if($("cSpk"))$("cSpk").onclick=()=>speak(st.term,S.book.lang);
+  if($("cAdd"))$("cAdd").onclick=async()=>{
+    await putVocab({id:vid(st.term),term:st.term,lemma:r.lemma||"",pos:r.pos||"",tr:r.tr||"",alt:r.alt||"",note:r.note||"",ctx:st.ctx,
+      book:S.book.title,bookId:S.book.id,src:S.book.lang||"auto",tgt:S.settings.tgt,status:"learn",box:0,added:Date.now()});
+    haptic();toast(t("saved_toast"));drawCard();
   };
-  if($("pDel"))$("pDel").onclick=async()=>{await delVocab(saved.id);drawPop()};
+  if($("cDel"))$("cDel").onclick=async()=>{await delVocab(saved.id);drawCard()};
 }
 async function openLookup(term,ctx,rect,preset){
-  term=term.trim().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"");
-  if(!term)return;
-  popState={term,ctx,res:preset||null};
+  term=term.trim().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"");if(!term)return;
+  cardState={term,ctx,res:preset||null};
   const saved=S.vocab.get(vid(term));
-  if(saved&&!preset)popState.res={lemma:saved.lemma,pos:saved.pos,tr:saved.tr,alt:saved.alt,note:saved.note};
-  drawPop();placePop(rect);
-  if(popState.res)return;
-  if(!hasKey()){popState.err=errText({code:"no_key"});drawPop();return}
-  const me=popState;
-  try{const r=await lookup(term,ctx);if(popState!==me)return;me.res=r;drawPop();placePop(rect)}
-  catch(e){if(popState!==me)return;me.err=errText(e);drawPop()}
+  if(saved&&!preset)cardState.res={lemma:saved.lemma,pos:saved.pos,tr:saved.tr,alt:saved.alt,note:saved.note};
+  drawCard();placeCard(rect);
+  if(cardState.res)return;
+  if(!hasKey()){cardState.err=t("err_no_key");drawCard();return}
+  const me=cardState;
+  try{const r=await lookup(term,ctx);if(cardState!==me)return;me.res=r;drawCard();placeCard(rect)}
+  catch(e){if(cardState!==me)return;me.err=errText(e);drawCard()}
 }
 $("rows").addEventListener("mouseup",e=>{
-  const sel=window.getSelection();
+  const sel=getSelection();
   if(sel&&!sel.isCollapsed&&sel.toString().trim().length>1){
-    const row=e.target.closest(".row");if(!row)return;
-    const orig=sel.anchorNode&&sel.anchorNode.parentElement&&sel.anchorNode.parentElement.closest(".orig");
-    if(!orig)return;
-    const text=sel.toString().replace(/\s+/g," ").trim();
-    if(text.split(" ").length>12)return;
-    const full=S.book.paras[+row.dataset.i].t;const off=full.indexOf(text);
-    const rect=sel.getRangeAt(0).getBoundingClientRect();
-    openLookup(text,off>=0?sentenceAround(full,off,text.length):full.slice(0,400),rect);
+    const row=e.target.closest(".row");const orig=sel.anchorNode&&sel.anchorNode.parentElement&&sel.anchorNode.parentElement.closest(".orig");
+    if(!row||!orig)return;
+    const text=sel.toString().replace(/\s+/g," ").trim();if(text.split(" ").length>12)return;
+    const full=S.book.paras[+row.dataset.i].t,off=full.indexOf(text);
+    openLookup(text,off>=0?sentenceAround(full,off,text.length):full.slice(0,400),sel.getRangeAt(0).getBoundingClientRect());
     e.stopPropagation();
   }
 });
 $("rows").addEventListener("click",e=>{
-  const sel=window.getSelection();if(sel&&!sel.isCollapsed&&sel.toString().trim().length>1)return;
-  const tr=e.target.closest(".tr");
-  if(tr&&S.settings.mode==="hide"){tr.classList.toggle("shown");return}
-  const w=e.target.closest(".w");if(!w){hidePop();return}
+  const sel=getSelection();if(sel&&!sel.isCollapsed&&sel.toString().trim().length>1)return;
+  const gl=e.target.closest(".gloss");if(gl&&S.settings.mode==="hide"){gl.classList.toggle("shown");return}
+  const w=e.target.closest(".w");if(!w){hideCard();return}
   e.stopPropagation();
   const row=w.closest(".row"),i=+row.dataset.i,full=S.book.paras[i].t;
   document.querySelectorAll(".row.focus").forEach(r=>r.classList.remove("focus"));row.classList.add("focus");
   document.querySelectorAll(".w.on").forEach(x=>x.classList.remove("on"));
-  // expression clicked → show the whole expression with its translation
   if(w.dataset.x){
     const ex=(curTr&&curTr.p[i]&&curTr.p[i].ex||[]).find(x=>x.s===w.dataset.x);
-    if(ex){
-      row.querySelectorAll(`.w[data-x="${CSS.escape(w.dataset.x)}"]`).forEach(x=>x.classList.add("on"));
+    if(ex){row.querySelectorAll(`.w[data-x="${CSS.escape(w.dataset.x)}"]`).forEach(x=>x.classList.add("on"));
       const off=full.toLowerCase().indexOf(ex.s.toLowerCase());
-      openLookup(ex.s,sentenceAround(full,Math.max(0,off),ex.s.length),w.getBoundingClientRect(),{lemma:ex.s,pos:"выражение",tr:ex.t,note:ex.n||""});
-      return;
-    }
+      openLookup(ex.s,sentenceAround(full,Math.max(0,off),ex.s.length),w.getBoundingClientRect(),{lemma:"",pos:t("expression"),tr:ex.t,note:ex.n||""});return}
   }
   w.classList.add("on");
   openLookup(w.textContent,sentenceAround(full,+w.dataset.o,w.textContent.length),w.getBoundingClientRect());
 });
-document.addEventListener("click",e=>{if(!e.target.closest("#pop")&&!e.target.closest("#rows"))hidePop()});
+document.addEventListener("click",e=>{if(!e.target.closest("#card")&&!e.target.closest("#rows"))hideCard()});
+function turn(d){const n=S.page+d;if(n<0||n>=S.pages.length)return;S.page=n;renderPage();scrollTo(0,0)}
 document.addEventListener("keydown",e=>{
   if(e.target.matches("input,select,textarea"))return;
-  if($("readView").classList.contains("hidden")||!$("drawer").classList.contains("hidden"))return;
-  if(e.key==="ArrowRight"&&S.page<S.pages.length-1){S.page++;renderPage();scrollTo(0,0)}
-  if(e.key==="ArrowLeft"&&S.page>0){S.page--;renderPage();scrollTo(0,0)}
-  if(e.key==="Escape")hidePop();
+  if(e.key==="Escape"){hideCard();closeOverlays();return}
+  if($("readView").classList.contains("hidden")||!$("drawer").classList.contains("hidden")||!$("modal").classList.contains("hidden"))return;
+  if(e.key==="ArrowRight")turn(1);if(e.key==="ArrowLeft")turn(-1);
 });
-// свайп влево/вправо — листать страницы (телефон)
+$("prevP").onclick=()=>turn(-1);$("nextP").onclick=()=>turn(1);
 (()=>{let x0=null,y0=null,t0=0;const r=$("reader");
   r.addEventListener("touchstart",e=>{if(e.touches.length!==1)return;x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now()},{passive:true});
-  r.addEventListener("touchend",e=>{if(x0===null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
-    if(Date.now()-t0>600||Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*2)return;
-    const sel=window.getSelection();if(sel&&!sel.isCollapsed)return;
-    if(dx<0&&S.page<S.pages.length-1){S.page++;renderPage();scrollTo(0,0)}
-    else if(dx>0&&S.page>0){S.page--;renderPage();scrollTo(0,0)}},{passive:true});
+  r.addEventListener("touchend",e=>{if(x0===null)return;const tc=e.changedTouches[0],dx=tc.clientX-x0,dy=tc.clientY-y0;x0=null;
+    if(Date.now()-t0>600||Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*2)return;const s=getSelection();if(s&&!s.isCollapsed)return;turn(dx<0?1:-1)},{passive:true});
 })();
-$("prevP").onclick=()=>{if(S.page>0){S.page--;renderPage();scrollTo(0,0)}};
-$("nextP").onclick=()=>{if(S.page<S.pages.length-1){S.page++;renderPage();scrollTo(0,0)}};
-$("toc").onchange=e=>{S.page=+e.target.value;renderPage();scrollTo(0,0)};
-$("backLib").onclick=()=>{S.book=null;renderLibrary()};
+$("backLib").onclick=showShelf;
+addEventListener("scroll",()=>{const s=scrollY>4;$("libBar").classList.toggle("scrolled",s);$("readBar").classList.toggle("scrolled",s)},{passive:true});
 
-/* ================= languages & settings ================= */
-function syncLangSelects(){
-  $("srcLang").innerHTML=LANGS.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
-  $("tgtLang").innerHTML=LANGS.filter(l=>l[0]!=="auto").map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
-  $("srcLang").value=S.book.lang||"auto";$("tgtLang").value=S.settings.tgt;
-  $("hSrc").textContent="Оригинал · "+(LNAME[S.book.lang]||"авто");$("hTgt").textContent="Перевод · "+LNAME[S.settings.tgt];
+/* ================= overlays: contents, languages, settings ================= */
+function openModal(html){$("modal").innerHTML=html;$("modal").classList.remove("hidden");$("shade").classList.remove("hidden");hideCard()}
+function closeOverlays(){["modal","drawer","shade"].forEach(id=>$(id).classList.add("hidden"))}
+$("shade").onclick=closeOverlays;
+$("tocBtn").onclick=()=>{
+  if(!S.toc.length)return;
+  openModal(`<h3>${esc(t("contents"))}</h3><div class="stack" style="margin-top:12px">${S.toc.map((x,k)=>`<button class="btn quiet" data-p="${x.page}" style="justify-content:space-between;white-space:normal;text-align:left"><span>${esc(x.label)}</span><span style="color:var(--ink-3);font-size:13px">${x.page+1}</span></button>`).join("")}</div>
+    <div class="row-end"><button class="btn" id="mClose">${esc(t("close"))}</button></div>`);
+  $("modal").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{S.page=+b.dataset.p;closeOverlays();renderPage();scrollTo(0,0)});
+  $("mClose").onclick=closeOverlays;
+};
+function langOptions(sel,withAuto){
+  const list=LANG_CODES.map(c=>[c,langName(c)]).sort((a,b)=>a[1].localeCompare(b[1],S.settings.ui));
+  return (withAuto?`<option value="auto"${sel==="auto"||!sel?" selected":""}>${esc(t("lang_auto"))}</option>`:"")+list.map(([c,n])=>`<option value="${c}"${c===sel?" selected":""}>${esc(n)}</option>`).join("");
 }
-$("srcLang").onchange=e=>{S.book.lang=e.target.value;saveBookMeta();syncLangSelects();renderPage()};
-$("tgtLang").onchange=e=>{S.settings.tgt=e.target.value;lsSet("pb_settings",S.settings);syncLangSelects();renderPage()};
+function updatePair(){
+  if(!S.book)return;
+  const s=S.book.lang&&S.book.lang!=="auto"?S.book.lang:"auto";
+  $("pairSrc").innerHTML=s==="auto"?"…":`<span class="long">${esc(langName(s))}</span><span class="short" style="display:none">${s.toUpperCase()}</span>`;
+  $("pairTgt").innerHTML=`<span class="long">${esc(langName(S.settings.tgt))}</span>`;
+  if(matchMedia("(max-width:820px)").matches){$("pairSrc").textContent=s==="auto"?"…":s.toUpperCase();$("pairTgt").textContent=S.settings.tgt.toUpperCase()}
+}
+addEventListener("resize",()=>updatePair());
+$("pairBtn").onclick=()=>{
+  openModal(`<h3>${esc(t("lang_pair"))}</h3>
+    <div class="field"><label for="mSrc">${esc(t("src_lang"))}</label><select class="select" id="mSrc" style="width:100%">${langOptions(S.book.lang||"auto",true)}</select></div>
+    <div class="field"><label for="mTgt">${esc(t("tgt_lang"))}</label><select class="select" id="mTgt" style="width:100%">${langOptions(S.settings.tgt,false)}</select></div>
+    <div class="row-end"><button class="btn primary" id="mOk">${esc(t("done"))}</button></div>`);
+  $("mOk").onclick=()=>{
+    const src=$("mSrc").value,tgt=$("mTgt").value,changed=src!==(S.book.lang||"auto")||tgt!==S.settings.tgt;
+    S.book.lang=src;saveBookMeta();S.settings.tgt=tgt;saveSettings();closeOverlays();updatePair();if(changed)renderPage();
+  };
+};
 function applySettings(){
   document.documentElement.style.setProperty("--fs",S.settings.fs+"px");
   const r=$("reader");r.classList.toggle("mode-hide",S.settings.mode==="hide");r.classList.toggle("mode-orig",S.settings.mode==="orig");
 }
-$("setBtn").onclick=()=>{
+function segHtml(id,opts,val){return `<div class="seg" id="${id}">${opts.map(([v,l])=>`<button data-v="${v}" class="${v===val?"on":""}">${esc(l)}</button>`).join("")}</div>`}
+function bindSeg(id,cb){$(id).onclick=e=>{const b=e.target.closest("button");if(!b)return;$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));cb(b.dataset.v)}}
+function openSettings(){
   const st=S.settings;
-  $("modal").innerHTML=`<h3>Настройки</h3>
-    <div class="field"><label>Ключ Anthropic API ${hasKey()?"· ✓ сохранён":""}</label>
-      <div style="display:flex;gap:6px"><input type="password" id="sKey" placeholder="sk-ant-…" value="${esc(apiKey())}" style="flex:1;border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--paper)" autocomplete="off"><button class="btn" id="sTest">Проверить</button></div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:6px" id="keyInfo">Хранится только на этом устройстве. Получить: console.anthropic.com → API Keys.</div></div>
-    <div class="field"><label>Перевод</label><div class="seg" id="sMode">
-      <button data-v="par">Рядом</button><button data-v="hide">Скрыт — по клику</button><button data-v="orig">Только оригинал</button></div></div>
-    <div class="field"><label><input type="checkbox" id="sCons" ${hasConsent()?"checked":""}> Разрешаю отправлять текст в Claude (Anthropic) для перевода</label></div>
-    <div class="field"><label>Качество перевода</label><div class="seg" id="sTier">
-      <button data-v="quick">Быстрый</button><button data-v="default">Стандарт</button><button data-v="complex">Литературный</button></div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:6px">«Литературный» — самая сильная модель: точнее передаёт стиль, но переводит медленнее.</div></div>
-    <div class="field"><label>Размер шрифта: <b id="fsv">${st.fs}</b></label><input type="range" id="sFs" min="14" max="28" value="${st.fs}" style="width:100%"></div>
-    <div class="field"><label><input type="checkbox" id="sAuto" ${st.auto?"checked":""}> Переводить страницы автоматически (и следующую заранее)</label></div>
-    <div style="text-align:right;margin-top:16px"><button class="btn primary" id="sOk">Готово</button></div>`;
-  const mark=()=>$("sMode").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===st.mode));mark();
-  $("sMode").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.mode=b.dataset.v;mark();applySettings();lsSet("pb_settings",st)};
-  const markT=()=>$("sTier").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===(st.tier||"default")));markT();
-  $("sTier").onclick=e=>{const b=e.target.closest("button");if(!b)return;st.tier=b.dataset.v;markT();lsSet("pb_settings",st);renderPage()};
-  $("sFs").oninput=e=>{st.fs=+e.target.value;$("fsv").textContent=st.fs;applySettings();lsSet("pb_settings",st)};
-  $("sAuto").onchange=e=>{st.auto=e.target.checked;lsSet("pb_settings",st)};
-  $("sCons").onchange=e=>{lsSet("pr_ai_consent",e.target.checked)};
-  $("sKey").onchange=e=>{lsSet("pr_apikey",e.target.value.trim());if(S.book)renderPage()};
-  $("sTest").onclick=async()=>{lsSet("pr_apikey",$("sKey").value.trim());$("keyInfo").textContent="Проверяю…";
-    try{await askJSON('Return only JSON: {"ok":true}',{modelTier:"quick",maxTokens:20});$("keyInfo").innerHTML="✓ Ключ работает";if(S.book)renderPage()}
-    catch(e){$("keyInfo").innerHTML=`<span class="err">${esc(errText(e))}</span>`}};
-  $("sOk").onclick=()=>{lsSet("pr_apikey",$("sKey").value.trim());closeOverlays();if(S.book)renderPage()};
-  $("modal").classList.remove("hidden");$("shade").classList.remove("hidden");
-};
-function closeOverlays(){["modal","drawer","shade"].forEach(id=>$(id).classList.add("hidden"))}
-$("shade").onclick=closeOverlays;
+  openModal(`<h3>${esc(t("settings"))}</h3>
+    <div class="group"><div class="field"><label>${esc(t("ui_lang"))}</label>${segHtml("sUi",Object.entries(UI_LANGS),st.ui)}</div></div>
+    <div class="group">
+      <div class="field"><label for="sKey">${esc(t("api_key"))}</label>
+        <div style="display:flex;gap:8px"><input type="password" id="sKey" placeholder="sk-ant-…" value="${esc(apiKey())}" autocomplete="off" spellcheck="false"><button class="btn" id="sTest">${esc(t("check"))}</button></div>
+        <div class="hint" id="keyInfo">${esc(hasKey()?t("key_saved"):t("key_hint"))}</div></div>
+      <div class="field"><label class="check"><input type="checkbox" id="sCons" ${hasConsent()?"checked":""}>${esc(t("consent_toggle"))}</label></div>
+      <div class="field"><label>${esc(t("quality"))}</label>${segHtml("sTier",[["quick",t("q_fast")],["default",t("q_std")],["complex",t("q_lit")]],st.tier||"default")}<div class="hint">${esc(t("q_hint"))}</div></div>
+      <div class="field"><label class="check"><input type="checkbox" id="sAuto" ${st.auto?"checked":""}>${esc(t("auto"))}</label></div>
+    </div>
+    <div class="group">
+      <div class="field"><label>${esc(t("view"))}</label>${segHtml("sMode",[["par",t("v_side")],["hide",t("v_hide")],["orig",t("v_orig")]],st.mode)}</div>
+      <div class="field"><label for="sFs">${esc(t("text_size"))}: <span id="fsv">${st.fs}</span></label><input type="range" id="sFs" min="15" max="30" value="${st.fs}"></div>
+    </div>
+    <div class="row-end"><button class="btn primary" id="sOk">${esc(t("done"))}</button></div>`);
+  bindSeg("sUi",v=>{st.ui=v;saveSettings();applyI18n();if(S.book){updatePair();updateTocLabel();renderPage()}else showShelf();openSettings()});
+  bindSeg("sTier",v=>{st.tier=v;saveSettings();if(S.book)renderPage()});
+  bindSeg("sMode",v=>{st.mode=v;saveSettings();applySettings()});
+  $("sFs").oninput=e=>{st.fs=+e.target.value;$("fsv").textContent=st.fs;applySettings();saveSettings()};
+  $("sAuto").onchange=e=>{st.auto=e.target.checked;saveSettings()};
+  $("sCons").onchange=e=>lsSet("pr_ai_consent",e.target.checked);
+  const saveKey=()=>lsSet("pr_apikey",$("sKey").value.trim());
+  $("sKey").onchange=saveKey;
+  $("sTest").onclick=async()=>{saveKey();const info=$("keyInfo");info.className="hint";info.textContent=t("checking");
+    try{await askJSON('Return only JSON: {"ok":true}',{modelTier:"quick",maxTokens:20});info.className="hint ok";info.textContent=t("key_ok");$("sCons").checked=hasConsent()}
+    catch(e){info.className="hint err";info.textContent=errText(e)}};
+  $("sOk").onclick=()=>{saveKey();closeOverlays();if(S.book)renderPage()};
+}
+$("setBtn").onclick=openSettings;$("libSet").onclick=openSettings;
 
-/* ================= dictionary drawer ================= */
+/* ================= vocabulary drawer ================= */
 const D={tab:"all",q:"",mode:"list",queue:[],qi:0,reveal:false};
-function openDrawer(){D.mode="list";$("drawer").classList.remove("hidden");$("shade").classList.remove("hidden");hidePop();renderDrawer()}
+function openDrawer(){D.mode="list";$("drawer").classList.remove("hidden");$("shade").classList.remove("hidden");hideCard();renderDrawer()}
 $("dictBtn").onclick=openDrawer;$("libDict").onclick=openDrawer;
 function vocabList(){
   let a=[...S.vocab.values()].sort((x,y)=>(y.added||0)-(x.added||0));
@@ -842,95 +1042,82 @@ function vocabList(){
   if(D.q){const q=D.q.toLowerCase();a=a.filter(v=>(v.term+" "+v.tr+" "+v.lemma).toLowerCase().includes(q))}
   return a;
 }
-function ctxHtml(v){
-  const c=v.ctx||"";const k=c.toLowerCase().indexOf((v.term||"").toLowerCase());
-  if(k<0)return esc(c);return esc(c.slice(0,k))+"<b>"+esc(c.slice(k,k+v.term.length))+"</b>"+esc(c.slice(k+v.term.length));
-}
+function ctxHtml(v){const c=v.ctx||"",k=c.toLowerCase().indexOf((v.term||"").toLowerCase());if(k<0)return esc(c);return esc(c.slice(0,k))+"<b>"+esc(c.slice(k,k+v.term.length))+"</b>"+esc(c.slice(k+v.term.length))}
+function drawerHead(title,extra=""){return `<header><div class="head"><h2>${esc(title)}</h2>${extra}<button class="icon-btn" id="dX" aria-label="${esc(t("close"))}">${icon("close")}</button></div>`}
 function renderDrawer(){
-  const dr=$("drawer");
   if(D.mode==="cards")return renderCards();
-  const list=vocabList();
-  const tabs=[["all","Все"],...(S.book?[["book","Эта книга"]]:[]),["learn","Учу"],["known","Знаю"]];
-  dr.innerHTML=`<header><div style="display:flex;align-items:center"><h2 style="flex:1">Мой словарь</h2><button class="icon" id="dX">✕</button></div>
-    <div class="tabs">${tabs.map(([k,n])=>`<button class="tab${D.tab===k?" on":""}" data-t="${k}">${n}</button>`).join("")}</div>
-    <div class="tools"><input id="dQ" placeholder="Поиск…" value="${esc(D.q)}"><button class="btn primary" id="dCards" ${list.length?"":"disabled"}>Карточки</button><button class="btn" id="dExp">Экспорт</button></div></header>
-    <div class="vlist">${list.length?list.map(v=>`<div class="v" data-id="${esc(v.id)}">
-      <div><span class="t">${esc(v.term)}</span>${v.lemma&&v.lemma.toLowerCase()!==v.term.toLowerCase()?` <span style="color:var(--ink3)">(${esc(v.lemma)})</span>`:""}<div class="r">${esc(v.tr)}</div></div>
-      <div class="acts">${canSpeak()?`<button class="icon" data-spk="${esc(v.term)}" data-l="${esc(v.src)}">🔊</button>`:""}<button class="icon" data-st title="${v.status==="known"?"Вернуть в «Учу»":"Отметить как выученное"}">${v.status==="known"?"↺":"✓"}</button><button class="icon" data-del title="Удалить">🗑</button></div>
+  const dr=$("drawer"),list=vocabList();
+  const tabs=[["all",t("t_all")],...(S.book?[["book",t("t_book")]]:[]),["learn",t("t_learning")],["known",t("t_known")]];
+  dr.innerHTML=drawerHead(t("vocab"))+`<div class="tabs">${tabs.map(([k,n])=>`<button class="tab${D.tab===k?" on":""}" data-t="${k}">${esc(n)}</button>`).join("")}</div>
+    <div class="tools"><input class="search" id="dQ" placeholder="${esc(t("search"))}" value="${esc(D.q)}"><button class="btn primary" id="dCards" ${list.length?"":"disabled"}>${esc(t("cards"))}</button><button class="btn" id="dExp">${esc(t("export"))}</button></div></header>
+    <div class="list">${list.length?list.map(v=>`<div class="entry" data-id="${esc(v.id)}">
+      <div><div class="t">${esc(v.term)}${v.lemma&&v.lemma.toLowerCase()!==v.term.toLowerCase()?`<small>${esc(v.lemma)}</small>`:""}</div><div class="r">${esc(v.tr)}</div></div>
+      <div class="acts">${canSpeak()?`<button class="icon-btn" data-spk title="${esc(t("speak"))}">${icon("speak")}</button>`:""}<button class="icon-btn" data-st title="${esc(v.status==="known"?t("mark_learning"):t("mark_known"))}">${icon(v.status==="known"?"undo":"check")}</button><button class="icon-btn" data-del title="${esc(t("del"))}">${icon("trash")}</button></div>
       ${v.ctx?`<div class="c">${ctxHtml(v)}</div>`:""}
-      <div class="meta"><span class="pill ${v.status==="known"?"known":"learn"}">${v.status==="known"?"знаю":"учу"}</span>${esc(v.book||"")} · ${esc(LNAME[v.src]||v.src)}→${esc(LNAME[v.tgt]||v.tgt)}${v.note?` · <span title="${esc(v.note)}">ℹ︎ ${esc(v.note.slice(0,60))}${v.note.length>60?"…":""}</span>`:""}</div></div>`).join("")
-      :`<div class="empty">Пока пусто.<br>Нажмите на слово в тексте или выделите фразу — и добавьте её сюда.</div>`}</div>`;
+      <div class="meta"><span class="state ${v.status==="known"?"known":""}">${esc(v.status==="known"?t("st_known"):t("st_learning"))}</span><span>${esc(v.book||"")}</span><span>${esc(langName(v.src))} → ${esc(langName(v.tgt))}</span></div></div>`).join("")
+      :`<div class="empty">${esc(t("empty_vocab"))}</div>`}</div>`;
   $("dX").onclick=closeOverlays;
   dr.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{D.tab=b.dataset.t;renderDrawer()});
   const q=$("dQ");q.oninput=()=>{D.q=q.value;const p=q.selectionStart;renderDrawer();const n=$("dQ");n.focus();n.setSelectionRange(p,p)};
   $("dCards").onclick=()=>{D.queue=list.filter(v=>v.status!=="known");if(!D.queue.length)D.queue=list.slice();D.queue.sort(()=>Math.random()-.5);D.qi=0;D.reveal=false;D.mode="cards";renderDrawer()};
   $("dExp").onclick=()=>exportVocab(list);
-  dr.querySelector(".vlist").onclick=async e=>{
-    const row=e.target.closest(".v");if(!row)return;const v=S.vocab.get(row.dataset.id);if(!v)return;
-    const spk=e.target.closest("[data-spk]");if(spk){try{const u=new SpeechSynthesisUtterance(v.term);if(v.src&&v.src!=="auto")u.lang=v.src;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(_){}return}
+  dr.querySelector(".list").onclick=async e=>{
+    const row=e.target.closest(".entry");if(!row)return;const v=S.vocab.get(row.dataset.id);if(!v)return;
+    if(e.target.closest("[data-spk]")){speak(v.term,v.src);return}
     if(e.target.closest("[data-del]")){await delVocab(v.id);return}
-    if(e.target.closest("[data-st]")){await putVocab(Object.assign({},v,{status:v.status==="known"?"learn":"known"}))}
+    if(e.target.closest("[data-st]"))await putVocab(Object.assign({},v,{status:v.status==="known"?"learn":"known"}));
   };
 }
 function renderCards(){
-  const dr=$("drawer");const v=D.queue[D.qi];
-  if(!v){dr.innerHTML=`<header><div style="display:flex;align-items:center"><h2 style="flex:1">Карточки</h2><button class="icon" id="dX">✕</button></div></header>
-    <div class="fc"><div class="ft">Готово! 🎉</div><div class="fctx">Повторено слов: ${D.queue.length}</div><button class="btn primary" id="fBack">К словарю</button></div>`;
+  const dr=$("drawer"),v=D.queue[D.qi];
+  const back=`<button class="btn quiet" id="fBack">${esc(t("to_list"))}</button>`;
+  if(!v){dr.innerHTML=drawerHead(t("cards"))+`</header><div class="fc"><div class="ft">${esc(t("cards_done"))}</div><div class="ctx">${esc(t("reviewed",{n:D.queue.length}))}</div><button class="btn primary" id="fBack">${esc(t("to_list"))}</button></div>`;
     $("dX").onclick=closeOverlays;$("fBack").onclick=()=>{D.mode="list";renderDrawer()};return}
-  dr.innerHTML=`<header><div style="display:flex;align-items:center"><h2 style="flex:1">Карточки · ${D.qi+1}/${D.queue.length}</h2><button class="btn ghost" id="fBack">Список</button><button class="icon" id="dX">✕</button></div></header>
-    <div class="fc"><div class="card"><div class="ft">${esc(v.term)}</div>${v.ctx?`<div class="fctx">${ctxHtml(v)}</div>`:""}
-      ${D.reveal?`<div class="fa">${esc(v.tr)}</div>${v.lemma?`<div style="color:var(--ink3)">${esc(v.lemma)}${v.pos?" · "+esc(v.pos):""}</div>`:""}${v.note?`<div class="fctx" style="font-size:14px">${esc(v.note)}</div>`:""}`:""}</div>
-      ${D.reveal?`<div style="display:flex;gap:10px"><button class="btn" id="fNo">Не помню</button><button class="btn primary" id="fYes">Помню</button></div>`
-        :`<button class="btn primary" id="fShow">Показать перевод</button>`}</div>`;
+  dr.innerHTML=drawerHead(t("cards")+" · "+t("card_of",{n:D.qi+1,t:D.queue.length}))+`</header>
+    <div class="fc"><div class="face"><div class="ft">${esc(v.term)}</div>${v.ctx?`<div class="ctx">${ctxHtml(v)}</div>`:""}
+      ${D.reveal?`<div class="fa">${esc(v.tr)}</div>${v.lemma?`<div style="color:var(--ink-3)">${esc([v.lemma,v.pos].filter(Boolean).join(", "))}</div>`:""}${v.note?`<div class="ctx" style="font-size:14px">${esc(v.note)}</div>`:""}`:""}</div>
+      ${D.reveal?`<div style="display:flex;gap:10px"><button class="btn" id="fNo">${esc(t("forgot"))}</button><button class="btn primary" id="fYes">${esc(t("remember"))}</button></div>`:`<button class="btn primary" id="fShow">${esc(t("show"))}</button>`}
+      ${back}</div>`;
   $("dX").onclick=closeOverlays;$("fBack").onclick=()=>{D.mode="list";renderDrawer()};
   if($("fShow"))$("fShow").onclick=()=>{D.reveal=true;renderCards()};
-  const next=async(ok)=>{
-    const box=Math.max(0,(v.box||0)+(ok?1:-1));const nv=Object.assign({},v,{box,status:box>=3?"known":"learn",seen:Date.now()});
-    D.qi++;D.reveal=false;await putVocab(nv);if(D.mode==="cards")renderCards();
-  };
+  const next=async ok=>{const box=Math.max(0,(v.box||0)+(ok?1:-1));D.qi++;D.reveal=false;await putVocab(Object.assign({},v,{box,status:box>=3?"known":"learn",seen:Date.now()}));if(D.mode==="cards")renderCards()};
   if($("fYes"))$("fYes").onclick=()=>next(true);
   if($("fNo"))$("fNo").onclick=()=>next(false);
 }
 async function download(name,data,type){
   if(NATIVE&&Plug("Filesystem")&&Plug("Share")){
-    try{
-      const w=await Plug("Filesystem").writeFile({path:name,data,directory:"CACHE",encoding:"utf8"});
-      await Plug("Share").share({title:name,files:[w.uri]});
-    }catch(e){if(!/cancel/i.test(String(e&&e.message)))toast("Не удалось поделиться файлом")}
+    try{const w=await Plug("Filesystem").writeFile({path:name,data,directory:"CACHE",encoding:"utf8"});await Plug("Share").share({title:name,files:[w.uri]})}
+    catch(e){if(!/cancel/i.test(String(e&&e.message)))toast(t("share_failed"))}
     return;
   }
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
 }
 function exportVocab(list){
-  $("modal").innerHTML=`<h3>Экспорт словаря</h3>
-    <div class="field"><button class="btn" id="eCsv" style="width:100%">CSV — для Excel / Google Таблиц</button></div>
-    <div class="field"><button class="btn" id="eAnki" style="width:100%">TXT для Anki (слово ⇥ перевод ⇥ контекст)</button></div>
-    <div class="field"><button class="btn" id="eJson" style="width:100%">Резервная копия (JSON) — весь словарь</button></div>
-    <div class="field"><button class="btn" id="eImp" style="width:100%">Восстановить из резервной копии…</button><input type="file" id="impIn" accept=".json" class="hidden"></div>
-    <div style="text-align:right;margin-top:16px"><button class="btn primary" id="eOk">Закрыть</button></div>`;
-  $("modal").classList.remove("hidden");$("shade").classList.remove("hidden");
-  const q=s=>'"'+String(s||"").replace(/"/g,'""')+'"';
-  $("eCsv").onclick=()=>download("slovar.csv","\ufeff"+"term;translation;lemma;note;context;book;status\n"+list.map(v=>[v.term,v.tr,v.lemma,v.note,v.ctx,v.book,v.status].map(q).join(";")).join("\n"),"text/csv");
-  const clean=s=>String(s||"").replace(/[\t\n]/g," ");
-  $("eAnki").onclick=()=>download("anki.txt",list.map(v=>[v.term,v.tr+(v.lemma&&v.lemma!==v.term?" ("+v.lemma+")":""),v.ctx].map(clean).join("\t")).join("\n"),"text/plain");
+  const m=$("modal");
+  m.innerHTML=`<h3>${esc(t("export_title"))}</h3><div class="stack" style="margin-top:14px">
+    <button class="btn" id="eCsv">${esc(t("exp_csv"))}</button><button class="btn" id="eAnki">${esc(t("exp_anki"))}</button>
+    <button class="btn" id="eJson">${esc(t("exp_json"))}</button><button class="btn" id="eImp">${esc(t("exp_restore"))}</button><input type="file" id="impIn" accept=".json" class="hidden"></div>
+    <div class="row-end"><button class="btn primary" id="eOk">${esc(t("close"))}</button></div>`;
+  m.classList.remove("hidden");m.style.zIndex=75;
+  const q=s=>'"'+String(s||"").replace(/"/g,'""')+'"',clean=s=>String(s||"").replace(/[\t\n]/g," ");
+  $("eCsv").onclick=()=>download("glossa-vocabulary.csv","\ufeff"+"term;translation;lemma;note;context;book;status\n"+list.map(v=>[v.term,v.tr,v.lemma,v.note,v.ctx,v.book,v.status].map(q).join(";")).join("\n"),"text/csv");
+  $("eAnki").onclick=()=>download("glossa-anki.txt",list.map(v=>[v.term,v.tr+(v.lemma&&v.lemma!==v.term?" ("+v.lemma+")":""),v.ctx].map(clean).join("\t")).join("\n"),"text/plain");
   $("eJson").onclick=()=>download("glossa-backup.json",JSON.stringify({app:"glossa",v:1,vocab:[...S.vocab.values()]},null,1),"application/json");
   $("eImp").onclick=()=>$("impIn").click();
-  $("impIn").onchange=async e=>{
-    const f=e.target.files[0];if(!f)return;
-    try{const d=JSON.parse(await f.text());let n=0;for(const v of d.vocab||[]){if(v&&v.id&&v.term){await idbPutIn("vocab",v);n++}}await loadVocab();toast("Восстановлено слов: "+n)}
-    catch(err){toast("Файл не похож на резервную копию")}
-  };
-  $("eOk").onclick=()=>{$("modal").classList.add("hidden");$("drawer").classList.contains("hidden")&&$("shade").classList.add("hidden")};
+  $("impIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;
+    try{const d=JSON.parse(await f.text());let n=0;for(const v of d.vocab||[])if(v&&v.id&&v.term){await idbPutIn("vocab",v);n++}await loadVocab();toast(t("restored",{n}))}
+    catch(err){toast(t("not_backup"))}};
+  $("eOk").onclick=()=>{m.classList.add("hidden");m.style.zIndex=""};
 }
 
 /* ================= start ================= */
-$("libSet").onclick=()=>$("setBtn").click();
+applyI18n();
 initNative();
-loadBuiltin().then(renderLibrary);
+loadBuiltin().then(showShelf);
 loadVocab();
-if(!hasKey()) setTimeout(()=>toast("Добавьте ключ API в настройках ⚙︎, чтобы включить перевод",4000),600);
-if(!NATIVE && "serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(!hasKey())setTimeout(()=>toast(t("first_run"),4000),700);
+if(!NATIVE&&"serviceWorker" in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>
