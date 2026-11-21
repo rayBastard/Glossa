@@ -183,6 +183,12 @@ svg.i.s{width:14px;height:14px}
 @media (max-height:500px) and (orientation:landscape){
   .card{position:fixed;left:auto!important;top:auto!important;right:calc(12px + var(--safe-r));bottom:calc(10px + var(--safe-b));width:340px;max-height:calc(100vh - 20px);overflow:auto}
   .bar{padding-top:calc(6px + var(--safe-t));padding-bottom:6px}
+  .shelf-wrap{padding-top:10px}
+  .shelf-head{margin:0 0 20px}
+  .shelf-head>div{width:100%}
+  .shelf-head h1{max-width:none;font-size:30px;text-wrap:wrap}
+  .shelf-head p{max-width:none;margin-top:8px}
+  .shelf{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 }
 
 /* ---------- sheets ---------- */
@@ -573,18 +579,33 @@ const MODELS={quick:"claude-haiku-5-5",default:"claude-sonnet-5-5",complex:"clau
 function apiKey(){return (lsGet("pr_apikey")||"").trim()}
 function hasKey(){return !!apiKey()}
 function parseJSON(text){if(typeof text!=="string")return text;const s=text.indexOf("{"),e=text.lastIndexOf("}");if(s<0||e<0)throw new Error("bad json");return JSON.parse(text.slice(s,e+1))}
+const noForcedTool=new Set(lsGet("pr_no_forced_tool")||[]);
+async function callApi(key,body){
+  let r;
+  try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)})}
+  catch(e){throw{code:"offline"}}
+  if(!r.ok){let msg="";try{msg=(await r.json()).error.message}catch(e){}
+    throw{code:r.status===401?"bad_key":r.status===429?"rate_limited":r.status===529||r.status>=500?"overloaded":r.status===404?"bad_model":"api_error",message:msg,status:r.status}}
+  return r.json();
+}
 async function askJSON(prompt,opts={}){
   const key=apiKey();
   if(!key)throw{code:"no_key"};
   if(!(await ensureConsent()))throw{code:"no_consent"};
-  let r;
-  try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify(Object.assign({model:MODELS[opts.modelTier||"default"],max_tokens:opts.maxTokens||8000,messages:[{role:"user",content:prompt}]},
-      opts.schema?{tools:[{name:"answer",description:"Return the result in this exact structure.",input_schema:opts.schema}],tool_choice:{type:"tool",name:"answer"}}:{}))})}
-  catch(e){throw{code:"offline"}}
-  if(!r.ok){let msg="";try{msg=(await r.json()).error.message}catch(e){}
-    throw{code:r.status===401?"bad_key":r.status===429?"rate_limited":r.status===529||r.status>=500?"overloaded":r.status===404?"bad_model":"api_error",message:msg}}
-  const d=await r.json();
+  const model=MODELS[opts.modelTier||"default"];
+  const base={model,max_tokens:opts.maxTokens||8000,messages:[{role:"user",content:prompt}]};
+  let d;
+  if(opts.schema){
+    const tools=[{name:"answer",description:"Return the result in this exact structure. Always call this tool exactly once.",input_schema:opts.schema}];
+    const forced=!noForcedTool.has(model);
+    try{d=await callApi(key,Object.assign({},base,{tools,tool_choice:forced?{type:"tool",name:"answer"}:{type:"auto"}},forced?{}:{messages:[{role:"user",content:prompt+"\n\nRespond only by calling the answer tool."}]}))}
+    catch(e){
+      if(forced&&e.status===400&&/tool_choice/i.test(e.message||"")){
+        noForcedTool.add(model);lsSet("pr_no_forced_tool",[...noForcedTool]);
+        d=await callApi(key,Object.assign({},base,{tools,tool_choice:{type:"auto"},messages:[{role:"user",content:prompt+"\n\nRespond only by calling the answer tool."}]}));
+      }else throw e;
+    }
+  }else d=await callApi(key,base);
   const tool=(d.content||[]).find(c=>c.type==="tool_use");
   if(tool&&tool.input&&typeof tool.input==="object")return tool.input;
   try{return parseJSON((d.content||[]).filter(c=>c.type==="text").map(c=>c.text).join(""))}catch(e){throw{code:"bad_answer"}}
